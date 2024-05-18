@@ -1,0 +1,19 @@
+{
+    "name": "yourorg/yourpackage",
+    "description": "Test package",
+    "type": "project",
+    "autoload": {
+        "psr-4": {
+            "YourOrg\\YourPackage\\": "../../../"
+        }
+    },
+    "minimum-stability": "dev",
+    "scripts": {
+        "customize": [
+            "YourOrg\\YourPackage\\CustomizeCommand"
+        ],
+        "post-create-project-cmd": [
+            "@customize"
+        ]
+    }
+}
