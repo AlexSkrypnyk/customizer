@@ -1,0 +1,2 @@
+First line of the third file
+Second line with non-unique string in the middle
