@@ -24,4 +24,14 @@ class CreateProjectTest extends CustomizerTestCase {
     $this->assertComposerCommandSuccessOutputContains('Project was customized');
   }
 
+  public function testCreateProjectNoInstallCancel(): void {
+    $this->customizerSetAnswers([
+      'no',
+    ]);
+
+    $this->composerCreateProject(['--no-install' => TRUE]);
+
+    $this->assertComposerCommandSuccessOutputContains('No changes were made.');
+  }
+
 }

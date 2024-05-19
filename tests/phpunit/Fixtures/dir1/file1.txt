@@ -1,0 +1,3 @@
+First line of the first file
+Unique string
+non-unique string

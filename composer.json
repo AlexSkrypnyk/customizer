@@ -50,9 +50,12 @@
         "sort-packages": true
     },
     "scripts": {
+        "customize": [
+            "YourOrg\\YourPackage\\CustomizeCommand"
+        ],
         "lint": [
             "phpcs",
-            "phpmd --exclude vendor,vendor-bin,node_modules . text phpmd.xml",
+            "phpmd --exclude vendor . text phpmd.xml",
             "phpstan",
             "rector --clear-cache --dry-run"
         ],

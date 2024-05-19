@@ -237,29 +237,25 @@ class CustomizeCommand extends BaseCommand {
    */
   protected static function initIo(InputInterface $input, OutputInterface $output): SymfonyStyle {
     $answers = getenv('CUSTOMIZER_ANSWERS');
-    $from_env = empty($answers);
     $answers = $answers ?: $input->getOption('answers');
 
     if ($answers && is_string($answers)) {
       $answers = json_decode($answers, TRUE);
 
       if (is_array($answers)) {
-        if ($from_env) {
-          $stream = fopen('php://memory', 'r+');
-          if ($stream === FALSE) {
-            throw new \RuntimeException('Failed to open memory stream');
-          }
-          foreach ($answers as $answer) {
-            fwrite($stream, $answer . \PHP_EOL);
-          }
-          rewind($stream);
+        $stream = fopen('php://memory', 'r+');
+        if ($stream === FALSE) {
+          // @codeCoverageIgnoreStart
+          throw new \RuntimeException('Failed to open memory stream');
+          // @codeCoverageIgnoreEnd
+        }
+        foreach ($answers as $answer) {
+          fwrite($stream, $answer . \PHP_EOL);
+        }
+        rewind($stream);
 
-          $input = new ArgvInput($answers);
-          $input->setStream($stream);
-        }
-        else {
-          $input = new ArgvInput($answers);
-        }
+        $input = new ArgvInput($answers);
+        $input->setStream($stream);
       }
     }
 
@@ -270,15 +266,15 @@ class CustomizeCommand extends BaseCommand {
    * Replace in path.
    *
    * @param string $path
-   *   Path: directory or file.
-   * @param string|array<int, string> $search
-   *   Search string or array of strings.
-   * @param string|array<int,string> $replace
-   *   Replace string or array of strings.
+   *   Directory or file path.
+   * @param string $search
+   *   Search string.
+   * @param string $replace
+   *   Replace string .
    * @param bool $replace_line
    *   Replace for a whole line or only the occurrence.
    */
-  protected static function replaceInPath(string $path, string|array $search, string|array $replace, bool $replace_line = FALSE): void {
+  protected static function replaceInPath(string $path, string $search, string $replace, bool $replace_line = FALSE): void {
     $dir = dirname($path);
     $filename = basename($path);
 
@@ -290,7 +286,6 @@ class CustomizeCommand extends BaseCommand {
     $finder = Finder::create()
       ->ignoreVCS(TRUE)
       ->ignoreDotFiles(FALSE)
-      ->depth(0)
       ->files()
       ->contains($search)
       ->in($dir);
@@ -304,10 +299,11 @@ class CustomizeCommand extends BaseCommand {
       $file_content = file_get_contents($file_path);
       if ($file_content !== FALSE) {
         if ($replace_line) {
-          $search = array_map(static fn($s): string => "/^.*{$s}.*\n/m", (array) $search);
+          $new_content = preg_replace(sprintf('/^.*%s.*/m', $search), $replace, $file_content);
         }
-
-        $new_content = str_replace($search, $replace, $file_content);
+        else {
+          $new_content = str_replace($search, $replace, $file_content);
+        }
 
         if ($new_content !== $file_content) {
           file_put_contents($file_path, $new_content);

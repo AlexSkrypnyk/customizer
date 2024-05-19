@@ -1,0 +1,2 @@
+First line of the fourth file
+End of file.
