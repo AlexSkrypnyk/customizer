@@ -22,6 +22,10 @@ class CreateProjectTest extends CustomizerTestCase {
 
     $this->assertComposerCommandSuccessOutputContains('Welcome to yourorg/yourpackage project customizer');
     $this->assertComposerCommandSuccessOutputContains('Project was customized');
+
+    $this->assertFileExists('composer.json');
+    $this->assertFileDoesNotExist('composer.lock');
+    $this->assertDirectoryDoesNotExist('vendor');
   }
 
   public function testCreateProjectNoInstallCancel(): void {
@@ -33,6 +37,42 @@ class CreateProjectTest extends CustomizerTestCase {
 
     $this->assertComposerCommandSuccessOutputContains('Welcome to yourorg/yourpackage project customizer');
     $this->assertComposerCommandSuccessOutputContains('No changes were made.');
+
+    $this->assertFileExists('composer.json');
+    $this->assertFileDoesNotExist('composer.lock');
+    $this->assertDirectoryDoesNotExist('vendor');
+  }
+
+  public function testCreateProjectInstall(): void {
+    $this->customizerSetAnswers([
+      self::TUI_ANSWER_NOTHING,
+    ]);
+
+    $this->composerCreateProject();
+
+    $this->assertComposerCommandSuccessOutputContains('Welcome to yourorg/yourpackage project customizer');
+    $this->assertComposerCommandSuccessOutputContains('Project was customized');
+
+    $this->assertFileExists('composer.json');
+    $this->assertFileExists('composer.lock');
+    $this->assertDirectoryExists('vendor');
+    $this->assertDirectoryExists('vendor/monolog/monolog');
+  }
+
+  public function testCreateProjectInstallCancel(): void {
+    $this->customizerSetAnswers([
+      'no',
+    ]);
+
+    $this->composerCreateProject();
+
+    $this->assertComposerCommandSuccessOutputContains('Welcome to yourorg/yourpackage project customizer');
+    $this->assertComposerCommandSuccessOutputContains('No changes were made.');
+
+    $this->assertFileExists('composer.json');
+    $this->assertFileExists('composer.lock');
+    $this->assertDirectoryExists('vendor');
+    $this->assertDirectoryExists('vendor/monolog/monolog');
   }
 
 }

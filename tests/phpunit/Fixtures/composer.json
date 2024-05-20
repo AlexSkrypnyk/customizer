@@ -8,6 +8,10 @@
         }
     },
     "minimum-stability": "dev",
+    "require": {
+        "php": ">=8.2",
+        "monolog/monolog": "^2.0"
+    },
     "scripts": {
         "customize": [
             "YourOrg\\YourPackage\\CustomizeCommand"
