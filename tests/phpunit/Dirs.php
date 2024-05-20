@@ -89,7 +89,7 @@ class Dirs {
   /**
    * Print information about locations.
    */
-  public function printInfo(): void {
+  public function printInfo(): string {
     $lines[] = '-- LOCATIONS --';
     $lines[] = 'Root       : ' . $this->root;
     $lines[] = 'Fixtures   : ' . $this->fixtures;
@@ -97,7 +97,7 @@ class Dirs {
     $lines[] = 'SUT        : ' . $this->sut;
     $lines[] = 'Local repo : ' . $this->repo;
 
-    fwrite(STDERR, PHP_EOL . implode(PHP_EOL, $lines) . PHP_EOL);
+    return implode(PHP_EOL, $lines) . PHP_EOL;
   }
 
 }
