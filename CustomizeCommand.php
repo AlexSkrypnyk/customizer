@@ -278,6 +278,13 @@ class CustomizeCommand extends BaseCommand {
       }
     }
 
+    $answers['Cleanup'] = [
+      'answer' => '',
+      'process' => function (): void {
+        $this->processCleanup();
+      },
+    ];
+
     return $answers;
   }
 
@@ -292,6 +299,7 @@ class CustomizeCommand extends BaseCommand {
     $progress->setFormat(' %current%/%max% [%bar%] %percent:3s%% - %message%');
     $progress->setMessage('Starting processing');
     $progress->start();
+
     foreach ($answers as $title => $answer) {
       $progress->setMessage(sprintf('Processed: %s', OutputFormatter::escape($title)));
       if (!empty($answer['process']) && is_callable($answer['process'])) {
@@ -303,9 +311,34 @@ class CustomizeCommand extends BaseCommand {
       }
       $progress->advance();
     }
+
     $progress->setMessage('Done');
     $progress->finish();
     $this->io->newLine();
+  }
+
+  /**
+   * Process cleanup callback.
+   */
+  protected function processCleanup(): void {
+    $this->packageData = $this->readComposerJson();
+
+    if (is_array($this->packageData['scripts'])) {
+      unset($this->packageData['scripts']['customize']);
+      $this->packageData['scripts']['post-create-project-cmd'] = array_filter($this->packageData['scripts']['post-create-project-cmd'], static fn($script): bool => $script !== '@customize');
+
+      if (empty($this->packageData['scripts']['post-create-project-cmd'])) {
+        unset($this->packageData['scripts']['post-create-project-cmd']);
+      }
+
+      if (empty($this->packageData['scripts'])) {
+        unset($this->packageData['scripts']);
+      }
+    }
+
+    $this->writeComposerJson($this->packageData);
+
+    $this->fs->remove($this->cwd . DIRECTORY_SEPARATOR . basename(__FILE__));
   }
 
   /**

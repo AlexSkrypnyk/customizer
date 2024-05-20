@@ -34,6 +34,9 @@ class CreateProjectTest extends CustomizerTestCase {
     $this->assertJsonValueEquals($json, 'name', 'testorg/testpackage');
     $this->assertJsonValueEquals($json, 'description', 'Test description');
     $this->assertJsonValueEquals($json, 'license', 'MIT');
+    $this->assertJsonHasNoKey($json, 'scripts');
+
+    $this->assertFileDoesNotExist($this->commandFile);
   }
 
   public function testCreateProjectNoInstallCancel(): void {
@@ -56,7 +59,9 @@ class CreateProjectTest extends CustomizerTestCase {
     $json = $this->composerJsonRead('composer.json');
     $this->assertJsonValueEquals($json, 'name', 'yourorg/yourpackage');
     $this->assertJsonValueEquals($json, 'description', 'Your package description');
-    $this->assertArrayNotHasKey('license', $json);
+    $this->assertJsonHasNoKey($json, 'license');
+
+    $this->assertFileExists($this->commandFile);
   }
 
   public function testCreateProjectInstall(): void {
@@ -81,6 +86,8 @@ class CreateProjectTest extends CustomizerTestCase {
     $this->assertJsonValueEquals($json, 'name', 'testorg/testpackage');
     $this->assertJsonValueEquals($json, 'description', 'Test description');
     $this->assertJsonValueEquals($json, 'license', 'MIT');
+
+    $this->assertFileDoesNotExist($this->commandFile);
   }
 
   public function testCreateProjectInstallCancel(): void {
@@ -104,7 +111,9 @@ class CreateProjectTest extends CustomizerTestCase {
     $json = $this->composerJsonRead('composer.json');
     $this->assertJsonValueEquals($json, 'name', 'yourorg/yourpackage');
     $this->assertJsonValueEquals($json, 'description', 'Your package description');
-    $this->assertArrayNotHasKey('license', $json);
+    $this->assertJsonHasNoKey($json, 'license');
+
+    $this->assertFileExists($this->commandFile);
   }
 
 }
