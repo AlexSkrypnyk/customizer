@@ -7,6 +7,7 @@ namespace AlexSkrypnyk\Customizer\Tests\Functional;
 use AlexSkrypnyk\Customizer\Tests\Dirs;
 use AlexSkrypnyk\Customizer\Tests\Traits\ComposerTrait;
 use AlexSkrypnyk\Customizer\Tests\Traits\DirsTrait;
+use Helmich\JsonAssert\JsonAssertions;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\TestStatus\Failure;
 
@@ -17,6 +18,7 @@ class CustomizerTestCase extends TestCase {
 
   use ComposerTrait;
   use DirsTrait;
+  use JsonAssertions;
 
   /**
    * TUI answer to indicate that the user did not provide any input.

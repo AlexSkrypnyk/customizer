@@ -6,9 +6,6 @@ namespace YourOrg\YourPackage;
 
 use Composer\Command\BaseCommand;
 use Composer\Console\Input\InputOption;
-use Composer\Factory;
-use Composer\IO\NullIO;
-use Composer\Package\RootPackageInterface;
 use Composer\Util\Filesystem;
 use Symfony\Component\Console\Formatter\OutputFormatter;
 use Symfony\Component\Console\Helper\TableSeparator;
@@ -60,9 +57,11 @@ class CustomizeCommand extends BaseCommand {
   protected Filesystem $fs;
 
   /**
-   * Root package.
+   * Package data.
+   *
+   * @var array<string,mixed>
    */
-  protected RootPackageInterface $package;
+  protected array $packageData;
 
   /**
    * Question definitions.
@@ -118,7 +117,75 @@ class CustomizeCommand extends BaseCommand {
    * @SuppressWarnings(PHPMD.UnusedFormalParameter)
    */
   protected function questions(): array {
-    return [];
+    // This an example of questions that can be asked to customize the project.
+    // You can adjust this method to ask questions that are relevant to your
+    // project.
+    //
+    // In this example, we ask for the package name, description, and license.
+    return [
+      'Package name' => [
+        // The question callback function defines how the question is asked.
+        // In this case, we ask the user to provide a package name as a string.
+        'question' => fn(array $answers): mixed => $this->io->ask('Package name', NULL, static function ($value) {
+          // This is a validation callback that checks if the package name is
+          // valid. If not, an exception is thrown.
+          if (!preg_match('/^[a-z0-9_.-]+\/[a-z0-9_.-]+$/', $value)) {
+            throw new \InvalidArgumentException(sprintf('The package name "%s" is invalid, it should be lowercase and have a vendor name, a forward slash, and a package name.', $value));
+          }
+
+          return $value;
+        }),
+        // The process callback function defines how the answer is processed.
+        // The processing takes place only after all answers are received and
+        // the user confirms the changes.
+        'process' => function (string $title, string $answer, array $answers): void {
+          // Update the package data.
+          $this->packageData['name'] = $answer;
+          // Write the updated composer.json file.
+          $this->writeComposerJson($this->packageData);
+          // Also, replace the package name in the project files.
+          $this->replaceInPath($this->cwd, $answer, $answer);
+        },
+      ],
+      'Description' => [
+        // For this question, we are using an answer from the previous question
+        // in the title of the question.
+        'question' => fn(array $answers): mixed => $this->io->ask(sprintf('Description for %s', $answers['Package name'])),
+        'process' => function (string $title, string $answer, array $answers): void {
+          // Processing is similar to the previous question.
+          $this->packageData['description'] = $answer;
+          $this->writeComposerJson($this->packageData);
+          $this->replaceInPath($this->cwd, $answer, $answer);
+        },
+      ],
+      'License' => [
+        // For this question, we are using a predefined list of options.
+        // For processing, we are using a method named 'processLicense' (only
+        // for the demonstration purposes).
+        'question' => fn(array $answers): mixed => $this->io->choice('License type', [
+          'MIT',
+          'GPL-3.0-or-later',
+          'Apache-2.0',
+        ], 'GPL-3.0-or-later'),
+      ],
+    ];
+  }
+
+  /**
+   * Process the license question.
+   *
+   * @param string $title
+   *   The question title.
+   * @param string $answer
+   *   The answer to the question.
+   * @param array<string,string> $answers
+   *   All answers received so far.
+   *
+   * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+   */
+  protected function processLicense(string $title, string $answer, array $answers): void {
+    $this->packageData['license'] = $answer;
+    $this->writeComposerJson($this->packageData);
   }
 
   /**
@@ -140,9 +207,9 @@ class CustomizeCommand extends BaseCommand {
     $this->io = $this->initIo($input, $output);
     $this->cwd = (string) getcwd();
     $this->fs = new Filesystem();
-    $this->package = (Factory::create(new NullIO(), $this->cwd . '/composer.json'))->getPackage();
+    $this->packageData = $this->readComposerJson();
 
-    $this->io->title(sprintf('Welcome to %s project customizer', $this->package->getName()));
+    $this->io->title(sprintf('Welcome to %s project customizer', is_string($this->packageData['name']) ? $this->packageData['name'] : 'the'));
 
     $this->io->block([
       'Please answer the following questions to customize your project.',
@@ -201,12 +268,12 @@ class CustomizeCommand extends BaseCommand {
       }
 
       if (empty($answers[$title]['process'])) {
-        $method = str_replace(' ', '', str_replace(['-', '_'], ' ', ucwords('process ' . $title)));
+        $method = str_replace(' ', '', str_replace(['-', '_'], ' ', 'process ' . ucwords($title)));
         if (method_exists($this, $method)) {
           if (!is_callable([$this, $method])) {
             throw new \RuntimeException(sprintf('Process method "%s" must be callable', $method));
           }
-          $answers[$title]['callback'] = $method;
+          $answers[$title]['process'] = [$this, $method];
         }
       }
     }
@@ -269,6 +336,38 @@ class CustomizeCommand extends BaseCommand {
     }
 
     return new SymfonyStyle($input, $output);
+  }
+
+  /**
+   * Read composer.json.
+   *
+   * @return array <string,mixed>
+   *   Composer.json data as an associative array.
+   */
+  protected function readComposerJson(): array {
+    $contents = file_get_contents($this->cwd . '/composer.json');
+
+    if ($contents === FALSE) {
+      throw new \RuntimeException('Failed to read composer.json');
+    }
+
+    $decoded = json_decode($contents, TRUE);
+
+    if (!is_array($decoded)) {
+      throw new \RuntimeException('Failed to decode composer.json');
+    }
+
+    return $decoded;
+  }
+
+  /**
+   * Write composer.json.
+   *
+   * @param array<string,mixed> $data
+   *   Composer.json data as an associative array.
+   */
+  protected function writeComposerJson(array $data): void {
+    file_put_contents($this->cwd . '/composer.json', json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
   }
 
   /**
