@@ -108,6 +108,7 @@ class CustomizerTestCase extends TestCase {
     $defaults = [
       'command' => 'create-project',
       'package' => $this->packageName,
+      'directory' => $this->dirs->sut,
       'version' => '@dev',
       '--repository' => [
         json_encode([
