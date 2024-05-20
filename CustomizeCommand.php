@@ -31,37 +31,38 @@ use Symfony\Component\Finder\Finder;
  *
  * If you are a scaffold project maintainer and want to use this class to
  * provide a customizer for your project, you can copy this class to your
- * project, adjust the namespace, $project variable, and implement the
- * `questions()` method to tailor the customizer to your scaffold's needs.
+ * project, adjust the namespace, and implement the `questions()` method or
+ * place the questions in an external file named `questions.php` in the root of
+ * your project to tailor the customizer to your scaffold's needs.
  */
 class CustomizeCommand extends BaseCommand {
 
   /**
-   * Project name.
+   * Defines the file name for an optional external file with questions.
    */
-  protected static string $project = 'your_project';
+  const QUESTIONS_FILE = 'questions.php';
 
   /**
    * IO.
    */
-  protected SymfonyStyle $io;
+  public SymfonyStyle $io;
 
   /**
    * Current working directory.
    */
-  protected string $cwd;
+  public string $cwd;
 
   /**
    * Filesystem utility.
    */
-  protected Filesystem $fs;
+  public Filesystem $fs;
 
   /**
    * Package data.
    *
    * @var array<string,mixed>
    */
-  protected array $packageData;
+  public array $packageData;
 
   /**
    * Question definitions.
@@ -70,11 +71,17 @@ class CustomizeCommand extends BaseCommand {
    * in the order they are defined. Questions can use answers from previous
    * questions received so far.
    *
+   * In addition to the questions defined here, you can also define questions
+   * in an external file named `questions.php` located next to the command
+   * file. The external file should return a callable that returns an array
+   * of questions.
+   *
    * Answers will be processed in the order they are defined. Process callbacks
    * have access to all answers and current class' properties and methods.
    * If a question does not have a process callback, a method prefixed with
    * 'process' and a camel cased question title will be called. If the method
-   * does not exist, there will be no processing.
+   * does not exist, a global function with the same name will be called.
+   * If neither method nor function exists, there will be no processing.
    *
    * @code
    * $questions['Machine name'] = [
@@ -126,7 +133,7 @@ class CustomizeCommand extends BaseCommand {
       'Package name' => [
         // The question callback function defines how the question is asked.
         // In this case, we ask the user to provide a package name as a string.
-        'question' => fn(array $answers): mixed => $this->io->ask('Package name', NULL, static function ($value) {
+        'question' => static fn(array $answers, CustomizeCommand $command): mixed => $command->io->ask('Package name', NULL, static function (string $value): string {
           // This is a validation callback that checks if the package name is
           // valid. If not, an exception is thrown.
           if (!preg_match('/^[a-z0-9_.-]+\/[a-z0-9_.-]+$/', $value)) {
@@ -138,41 +145,27 @@ class CustomizeCommand extends BaseCommand {
         // The process callback function defines how the answer is processed.
         // The processing takes place only after all answers are received and
         // the user confirms the changes.
-        'process' => function (string $title, string $answer, array $answers): void {
+        'process' => static function (string $title, string $answer, array $answers, CustomizeCommand $command): void {
           // Update the package data.
-          $this->packageData['name'] = $answer;
+          $command->packageData['name'] = $answer;
           // Write the updated composer.json file.
-          $this->writeComposerJson($this->packageData);
+          $command->writeComposerJson($command->packageData);
           // Also, replace the package name in the project files.
-          $this->replaceInPath($this->cwd, $answer, $answer);
+          $command->replaceInPath($command->cwd, $answer, $answer);
         },
       ],
       'Description' => [
         // For this question, we are using an answer from the previous question
         // in the title of the question.
-        'question' => fn(array $answers): mixed => $this->io->ask(sprintf('Description for %s', $answers['Package name'])),
-        'process' => function (string $title, string $answer, array $answers): void {
-          // Processing is similar to the previous question.
-          $this->packageData['description'] = $answer;
-          $this->writeComposerJson($this->packageData);
-          $this->replaceInPath($this->cwd, $answer, $answer);
-        },
-      ],
-      'License' => [
-        // For this question, we are using a predefined list of options.
-        // For processing, we are using a method named 'processLicense' (only
-        // for the demonstration purposes).
-        'question' => fn(array $answers): mixed => $this->io->choice('License type', [
-          'MIT',
-          'GPL-3.0-or-later',
-          'Apache-2.0',
-        ], 'GPL-3.0-or-later'),
+        // We are also using a method named 'processDescription' for processing
+        // the answer (just for this example).
+        'question' => static fn(array $answers, CustomizeCommand $command): mixed => $command->io->ask(sprintf('Description for %s', $answers['Package name'])),
       ],
     ];
   }
 
   /**
-   * Process the license question.
+   * Process the description question.
    *
    * @param string $title
    *   The question title.
@@ -180,12 +173,15 @@ class CustomizeCommand extends BaseCommand {
    *   The answer to the question.
    * @param array<string,string> $answers
    *   All answers received so far.
+   * @param CustomizeCommand $command
+   *   The command instance.
    *
    * @SuppressWarnings(PHPMD.UnusedFormalParameter)
    */
-  protected function processLicense(string $title, string $answer, array $answers): void {
-    $this->packageData['license'] = $answer;
-    $this->writeComposerJson($this->packageData);
+  protected static function processDescription(string $title, string $answer, array $answers, CustomizeCommand $command): void {
+    $command->packageData['description'] = $answer;
+    $command->writeComposerJson($command->packageData);
+    $command->replaceInPath($command->cwd, $answer, $answer);
   }
 
   /**
@@ -250,9 +246,24 @@ class CustomizeCommand extends BaseCommand {
    *     - callback: The callback to process the answer. If not specified, a
    *       method prefixed with 'process' and a camel cased question will be
    *       called. If the method does not exist, there will be no processing.
+   *
+   * @SuppressWarnings(PHPMD.CyclomaticComplexity)
    */
   protected function askQuestions(): array {
     $questions = $this->questions();
+
+    // Check if there is an external questions file, require it and merge the
+    // questions.
+    $files = (new Finder())->in($this->cwd)->name(self::QUESTIONS_FILE)->files();
+    foreach ($files as $file) {
+      if (file_exists($file->getRealPath())) {
+        $external_questions = require_once $file->getRealPath();
+        if (is_callable($external_questions)) {
+          $questions = array_merge($questions, $external_questions($this));
+        }
+        break;
+      }
+    }
 
     $answers = [];
     foreach ($questions as $title => $callbacks) {
@@ -260,13 +271,16 @@ class CustomizeCommand extends BaseCommand {
         throw new \RuntimeException(sprintf('Question "%s" must be callable', $title));
       }
 
-      $answers[$title]['answer'] = $callbacks['question'](array_combine(array_keys($answers), array_column($answers, 'answer')));
+      // Ask the question and store the answer.
+      $answers[$title]['answer'] = $callbacks['question'](array_combine(array_keys($answers), array_column($answers, 'answer')), $this);
 
+      // Validate the process callback.
       $answers[$title]['process'] = $callbacks['process'] ?? NULL;
       if (!empty($answers[$title]['process']) && !is_callable($answers[$title]['process'])) {
         throw new \RuntimeException(sprintf('Process callback "%s" must be callable', $answers[$title]['process']));
       }
 
+      // Look for a process method or function.
       if (empty($answers[$title]['process'])) {
         $method = str_replace(' ', '', str_replace(['-', '_'], ' ', 'process ' . ucwords($title)));
         if (method_exists($this, $method)) {
@@ -275,15 +289,11 @@ class CustomizeCommand extends BaseCommand {
           }
           $answers[$title]['process'] = [$this, $method];
         }
+        elseif (function_exists($method)) {
+          $answers[$title]['process'] = $method;
+        }
       }
     }
-
-    $answers['Cleanup'] = [
-      'answer' => '',
-      'process' => function (): void {
-        $this->processCleanup();
-      },
-    ];
 
     return $answers;
   }
@@ -307,10 +317,13 @@ class CustomizeCommand extends BaseCommand {
           $title,
           $answer['answer'],
           array_combine(array_keys($answers), array_column($answers, 'answer')),
+          $this,
         ]);
       }
       $progress->advance();
     }
+
+    $this->cleanup();
 
     $progress->setMessage('Done');
     $progress->finish();
@@ -318,9 +331,9 @@ class CustomizeCommand extends BaseCommand {
   }
 
   /**
-   * Process cleanup callback.
+   * Cleanup the command.
    */
-  protected function processCleanup(): void {
+  protected function cleanup(): void {
     $this->packageData = $this->readComposerJson();
 
     if (is_array($this->packageData['scripts'])) {
@@ -377,7 +390,7 @@ class CustomizeCommand extends BaseCommand {
    * @return array <string,mixed>
    *   Composer.json data as an associative array.
    */
-  protected function readComposerJson(): array {
+  public function readComposerJson(): array {
     $contents = file_get_contents($this->cwd . '/composer.json');
 
     if ($contents === FALSE) {
@@ -399,7 +412,7 @@ class CustomizeCommand extends BaseCommand {
    * @param array<string,mixed> $data
    *   Composer.json data as an associative array.
    */
-  protected function writeComposerJson(array $data): void {
+  public function writeComposerJson(array $data): void {
     file_put_contents($this->cwd . '/composer.json', json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
   }
 
@@ -415,7 +428,7 @@ class CustomizeCommand extends BaseCommand {
    * @param bool $replace_line
    *   Replace for a whole line or only the occurrence.
    */
-  protected static function replaceInPath(string $path, string $search, string $replace, bool $replace_line = FALSE): void {
+  public static function replaceInPath(string $path, string $search, string $replace, bool $replace_line = FALSE): void {
     $dir = dirname($path);
     $filename = basename($path);
 
