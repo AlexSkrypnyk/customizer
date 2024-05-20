@@ -6,6 +6,9 @@ namespace YourOrg\YourPackage;
 
 use Composer\Command\BaseCommand;
 use Composer\Console\Input\InputOption;
+use Composer\Factory;
+use Composer\IO\NullIO;
+use Composer\Package\RootPackageInterface;
 use Composer\Util\Filesystem;
 use Symfony\Component\Console\Formatter\OutputFormatter;
 use Symfony\Component\Console\Helper\TableSeparator;
@@ -55,6 +58,11 @@ class CustomizeCommand extends BaseCommand {
    * Filesystem utility.
    */
   protected Filesystem $fs;
+
+  /**
+   * Root package.
+   */
+  protected RootPackageInterface $package;
 
   /**
    * Question definitions.
@@ -119,7 +127,7 @@ class CustomizeCommand extends BaseCommand {
   protected function configure(): void {
     $this
       ->setName('customize')
-      ->setDescription(sprintf('Customize %s project', static::$project))
+      ->setDescription('Customize project')
       ->setDefinition([
         new InputOption('answers', NULL, InputOption::VALUE_REQUIRED, 'Answers to questions passed as a JSON string.'),
       ]);
@@ -132,8 +140,9 @@ class CustomizeCommand extends BaseCommand {
     $this->io = $this->initIo($input, $output);
     $this->cwd = (string) getcwd();
     $this->fs = new Filesystem();
+    $this->package = (Factory::create(new NullIO(), $this->cwd . '/composer.json'))->getPackage();
 
-    $this->io->title(sprintf('Welcome to %s project customizer', static::$project));
+    $this->io->title(sprintf('Welcome to %s project customizer', $this->package->getName()));
 
     $this->io->block([
       'Please answer the following questions to customize your project.',

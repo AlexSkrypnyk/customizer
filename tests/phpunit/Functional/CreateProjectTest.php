@@ -20,7 +20,7 @@ class CreateProjectTest extends CustomizerTestCase {
 
     $this->composerCreateProject(['--no-install' => TRUE]);
 
-    $this->assertComposerCommandSuccessOutputContains('Welcome to your_project project customizer');
+    $this->assertComposerCommandSuccessOutputContains('Welcome to yourorg/yourpackage project customizer');
     $this->assertComposerCommandSuccessOutputContains('Project was customized');
   }
 
@@ -31,6 +31,7 @@ class CreateProjectTest extends CustomizerTestCase {
 
     $this->composerCreateProject(['--no-install' => TRUE]);
 
+    $this->assertComposerCommandSuccessOutputContains('Welcome to yourorg/yourpackage project customizer');
     $this->assertComposerCommandSuccessOutputContains('No changes were made.');
   }
 
