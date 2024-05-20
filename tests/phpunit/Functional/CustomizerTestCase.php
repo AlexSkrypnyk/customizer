@@ -68,6 +68,7 @@ class CustomizerTestCase extends TestCase {
       $reflector = new \ReflectionClass(CustomizeCommand::class);
       $this->commandFile = basename((string) $reflector->getFileName());
       $dirs->fs->touch($dirs->repo . DIRECTORY_SEPARATOR . $this->commandFile);
+      $dirs->fs->copy($dirs->root . DIRECTORY_SEPARATOR . CustomizeCommand::QUESTIONS_FILE, $dirs->repo . DIRECTORY_SEPARATOR . CustomizeCommand::QUESTIONS_FILE);
 
       // Save the package name for later use in tests.
       $this->packageName = $json['name'];
