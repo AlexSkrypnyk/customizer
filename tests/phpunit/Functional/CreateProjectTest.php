@@ -45,7 +45,10 @@ class CreateProjectTest extends CustomizerTestCase {
 
   #[RunInSeparateProcess]
   public function testCreateProjectNoInstallCommandInDifferentDir(): void {
-    $this->dirs->fs->copy($this->dirs->root . DIRECTORY_SEPARATOR . $this->commandFile, $this->dirs->repo . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . $this->commandFile);
+    $this->dirs->fs->copy(
+      $this->dirs->root . DIRECTORY_SEPARATOR . $this->commandFile,
+      $this->dirs->repo . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . $this->commandFile
+    );
     $json = $this->composerJsonRead($this->dirs->repo . DIRECTORY_SEPARATOR . 'composer.json');
     $json['autoload']['classmap'] = ['src/' . $this->commandFile];
     $this->composerJsonWrite($this->dirs->repo . DIRECTORY_SEPARATOR . 'composer.json', $json);
@@ -98,6 +101,38 @@ class CreateProjectTest extends CustomizerTestCase {
     $json = $this->composerJsonRead('composer.json');
     $this->assertJsonValueEquals($json, 'name', 'testorg/testpackage');
     $this->assertJsonValueEquals($json, 'description', 'Test description');
+    $this->assertJsonHasNoKey($json, 'license');
+
+    $this->assertJsonHasNoKey($json, 'autoload');
+    $this->assertJsonHasNoKey($json, 'scripts');
+    $this->assertFileDoesNotExist($this->commandFile);
+  }
+
+  #[RunInSeparateProcess]
+  public function testCreateProjectNoInstallDisabledQuestionsInQuestionsFile(): void {
+    $this->dirs->fs->copy(
+      $this->dirs->fixtures . DIRECTORY_SEPARATOR . 'questions.disabled.php',
+      $this->dirs->repo . DIRECTORY_SEPARATOR . CustomizeCommand::QUESTIONS_FILE,
+      TRUE
+    );
+
+    $this->customizerSetAnswers([
+      'testorg/testpackage',
+      self::TUI_ANSWER_NOTHING,
+    ]);
+
+    $this->composerCreateProject(['--no-install' => TRUE]);
+
+    $this->assertComposerCommandSuccessOutputContains('Welcome to yourorg/yourpackage project customizer');
+    $this->assertComposerCommandSuccessOutputContains('Project was customized');
+
+    $this->assertFileExists('composer.json');
+    $this->assertFileDoesNotExist('composer.lock');
+    $this->assertDirectoryDoesNotExist('vendor');
+
+    $json = $this->composerJsonRead('composer.json');
+    $this->assertJsonValueEquals($json, 'name', 'testorg/testpackage');
+    $this->assertJsonValueEquals($json, 'description', 'Your package description');
     $this->assertJsonHasNoKey($json, 'license');
 
     $this->assertJsonHasNoKey($json, 'autoload');

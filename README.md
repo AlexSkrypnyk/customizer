@@ -37,7 +37,7 @@ or the `CUSTOMIZER_ANSWERS` environment variable.
 If you are a scaffold project maintainer and want to use this class to
 provide a customizer for your project, you can copy this class to your
 project, adjust the namespace, and implement the `questions()` method or
-place the questions in an external file named `questions.php` in the root of
+place the questions in an external file named `questions.php` anywhere in
 your project to tailor the customizer to your scaffold's needs.
 
 ## Maintenance
