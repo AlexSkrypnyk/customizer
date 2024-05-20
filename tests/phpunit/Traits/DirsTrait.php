@@ -32,10 +32,10 @@ trait DirsTrait {
   }
 
   /**
-   * Print directories information.
+   * Print directories' information.
    */
-  protected function dirsInfo(): void {
-    $this->dirs->printInfo();
+  protected function dirsInfo(): string {
+    return $this->dirs->printInfo();
   }
 
   /**

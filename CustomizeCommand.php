@@ -336,10 +336,22 @@ class CustomizeCommand extends BaseCommand {
   protected function cleanup(): void {
     $this->packageData = $this->readComposerJson();
 
+    if (is_array($this->packageData['autoload']) && is_array($this->packageData['autoload']['classmap'])) {
+      $this->packageData['autoload']['classmap'] = array_filter($this->packageData['autoload']['classmap'], static fn($file): bool => !str_contains($file, basename(__FILE__)));
+
+      if (empty($this->packageData['autoload']['classmap'])) {
+        unset($this->packageData['autoload']['classmap']);
+      }
+
+      if (empty($this->packageData['autoload']['classmap'])) {
+        unset($this->packageData['autoload']);
+      }
+    }
+
     if (is_array($this->packageData['scripts'])) {
       unset($this->packageData['scripts']['customize']);
-      $this->packageData['scripts']['post-create-project-cmd'] = array_filter($this->packageData['scripts']['post-create-project-cmd'], static fn($script): bool => $script !== '@customize');
 
+      $this->packageData['scripts']['post-create-project-cmd'] = array_filter($this->packageData['scripts']['post-create-project-cmd'], static fn($script): bool => $script !== '@customize');
       if (empty($this->packageData['scripts']['post-create-project-cmd'])) {
         unset($this->packageData['scripts']['post-create-project-cmd']);
       }

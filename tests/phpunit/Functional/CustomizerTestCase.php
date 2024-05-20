@@ -10,6 +10,7 @@ use AlexSkrypnyk\Customizer\Tests\Traits\DirsTrait;
 use AlexSkrypnyk\Customizer\Tests\Traits\JsonAssertTrait;
 use Helmich\JsonAssert\JsonAssertions;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\TestStatus\Error;
 use PHPUnit\Framework\TestStatus\Failure;
 use YourOrg\YourPackage\CustomizeCommand;
 
@@ -44,6 +45,9 @@ class CustomizerTestCase extends TestCase {
   protected function setUp(): void {
     parent::setUp();
 
+    $reflector = new \ReflectionClass(CustomizeCommand::class);
+    $this->commandFile = basename((string) $reflector->getFileName());
+
     // Initialize the Composer command tester.
     $this->composerCommandInit();
 
@@ -56,19 +60,17 @@ class CustomizerTestCase extends TestCase {
       $dirs->fs->copy($dirs->fixtures . '/composer.json', $dst);
 
       $json = $this->composerJsonRead($dst);
-      // Change the autoload path for the Customizer class to be loaded from the
-      // root of the project so that tests can have correct coverage.
-      $json['autoload']['psr-4']['YourOrg\\YourPackage\\'] = $dirs->root;
-      $this->composerJsonWrite($dst, $json);
       // Create an empty command file in the 'system under test' to replicate a
       // real scenario where the file is copied into a real project and then
       // removed after customization runs.
       // Instead of this file, we are using the CustomizeCommand.php in the
       // root of this project to get code test coverage.
-      $reflector = new \ReflectionClass(CustomizeCommand::class);
-      $this->commandFile = basename((string) $reflector->getFileName());
       $dirs->fs->touch($dirs->repo . DIRECTORY_SEPARATOR . $this->commandFile);
       $dirs->fs->copy($dirs->root . DIRECTORY_SEPARATOR . CustomizeCommand::QUESTIONS_FILE, $dirs->repo . DIRECTORY_SEPARATOR . CustomizeCommand::QUESTIONS_FILE);
+      // Update the 'autoload' to include the command file from the project
+      // root.
+      $json['autoload']['classmap'] = [$dirs->root . DIRECTORY_SEPARATOR . $this->commandFile];
+      $this->composerJsonWrite($dst, $json);
 
       // Save the package name for later use in tests.
       $this->packageName = $json['name'];
@@ -93,9 +95,8 @@ class CustomizerTestCase extends TestCase {
    * {@inheritdoc}
    */
   protected function onNotSuccessfulTest(\Throwable $t): never {
-    $this->dirsInfo();
+    fwrite(STDERR, 'see below' . PHP_EOL . PHP_EOL . $this->dirsInfo() . PHP_EOL . $t->getMessage() . PHP_EOL);
 
-    // Rethrow the exception to allow the test to fail normally.
     parent::onNotSuccessfulTest($t);
   }
 
@@ -108,7 +109,7 @@ class CustomizerTestCase extends TestCase {
   public function hasFailed(): bool {
     $status = $this->status();
 
-    return $status instanceof Failure;
+    return $status instanceof Failure || $status instanceof Error;
   }
 
   protected function customizerSetAnswers(array $answers): void {

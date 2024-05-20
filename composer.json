@@ -38,9 +38,9 @@
         }
     ],
     "autoload": {
-        "psr-4": {
-            "YourOrg\\YourPackage\\": ""
-        }
+        "classmap": [
+            "CustomizeCommand.php"
+        ]
     },
     "autoload-dev": {
         "psr-4": {
