@@ -22,9 +22,9 @@
 ## What is this?
 
 A single-file Symfony Console Command class designed to be a drop-in for any
-scaffold, template, or boilerplate project: it provides all the necessary
-functionality to ask user questions and process their answers to customize
-the project during the `composer create-project` command.
+scaffold, template, or boilerplate project: it provides the functionality to 
+ask user questions and process their answers to customize the project during 
+the `composer create-project` command.
 
 ## Why?
 
@@ -51,7 +51,7 @@ to provide a customizer for it.
 },
 "scripts": {
     "customize": [
-      "AlexSkrypnyk\\Customizer\\CustomizeCommand"
+        "YourNamespace\\Customizer\\CustomizeCommand"
     ],
     "post-create-project-cmd": [
         "@customize"
@@ -69,7 +69,7 @@ to provide a customizer for it.
    See the [Developing and testing your questions](#developing-and-testing-your-questions)
    section below for more information.
 
-## Usage
+## Usage example
 
 After the installation into your project template, the customizer will be
 triggered automatically after a user issues the `composer create-project` command.
@@ -168,7 +168,6 @@ protected static function processDescription(string $title, string $answer, arra
   $command->writeComposerJson($command->packageData);
   $command->replaceInPath($command->cwd, $answer, $answer);
 }
-
 ```
 
 ### External questions file
