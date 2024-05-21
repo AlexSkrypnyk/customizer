@@ -8,7 +8,6 @@ parameters:
 
   paths:
     - CustomizeCommand.php
-    - docs.php
     - tests/phpunit
 
   excludePaths:

@@ -35,6 +35,11 @@ use Symfony\Component\Finder\Finder;
  * place the questions in an external file named `questions.php` anywhere in
  * your project to tailor the customizer to your scaffold's needs.
  *
+ * Please leave this link in your project to help others find this tool.
+ * Thank you!
+ *
+ * @see https://github.com/alexSkrypnyk/customizer
+ *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
 class CustomizeCommand extends BaseCommand {
