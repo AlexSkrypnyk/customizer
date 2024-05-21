@@ -294,7 +294,7 @@ class CustomizeCommand extends BaseCommand {
       }
 
       // Ask the question and store the answer.
-      $answers[$title]['answer'] = $callbacks['question'](array_combine(array_keys($answers), array_column($answers, 'answer')), $this);
+      $answers[$title]['answer'] = (string) $callbacks['question'](array_combine(array_keys($answers), array_column($answers, 'answer')), $this);
 
       // Validate the process callback.
       $answers[$title]['process'] = $callbacks['process'] ?? NULL;
