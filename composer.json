@@ -72,8 +72,6 @@
             "phpcbf"
         ],
         "test": "phpunit --no-coverage",
-        "test-coverage": "phpunit",
-        "docs": "php docs.php",
-        "docs-lint": "php docs.php --fail-on-change"
+        "test-coverage": "phpunit"
     }
 }
