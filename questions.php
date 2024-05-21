@@ -1,6 +1,6 @@
 <?php
 
-use YourOrg\YourPackage\CustomizeCommand;
+use AlexSkrypnyk\Customizer\CustomizeCommand;
 
 /**
  * Process the license question.

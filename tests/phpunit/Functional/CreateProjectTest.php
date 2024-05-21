@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AlexSkrypnyk\Customizer\Tests\Functional;
 
+use AlexSkrypnyk\Customizer\CustomizeCommand;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\RunInSeparateProcess;
-use YourOrg\YourPackage\CustomizeCommand;
 
 /**
  * Test the scaffold create-project command with no-install.

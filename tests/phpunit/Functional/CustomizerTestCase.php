@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AlexSkrypnyk\Customizer\Tests\Functional;
 
+use AlexSkrypnyk\Customizer\CustomizeCommand;
 use AlexSkrypnyk\Customizer\Tests\Dirs;
 use AlexSkrypnyk\Customizer\Tests\Traits\ComposerTrait;
 use AlexSkrypnyk\Customizer\Tests\Traits\DirsTrait;
@@ -12,7 +13,6 @@ use Helmich\JsonAssert\JsonAssertions;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\TestStatus\Error;
 use PHPUnit\Framework\TestStatus\Failure;
-use YourOrg\YourPackage\CustomizeCommand;
 
 /**
  * Base class for functional tests.

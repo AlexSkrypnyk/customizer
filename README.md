@@ -51,7 +51,7 @@ to provide a customizer for it.
 },
 "scripts": {
     "customize": [
-      "YourOrg\\YourPackage\\CustomizeCommand"
+      "AlexSkrypnyk\\Customizer\\CustomizeCommand"
     ],
     "post-create-project-cmd": [
         "@customize"
