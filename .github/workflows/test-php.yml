@@ -21,6 +21,7 @@ jobs:
     strategy:
       matrix:
         php-versions: ['8.2', '8.3']
+        composer-channel: ['stable', 'snapshot']
 
     steps:
       - name: Checkout code
@@ -39,6 +40,9 @@ jobs:
           coverage: pcov
           ini-values: pcov.directory=.
 
+      - name: Update Composer
+        run: composer --verbose self-update --${{ matrix.composer-channel }} && composer --version
+
       - name: Install dependencies
         run: composer install
 
@@ -53,7 +57,7 @@ jobs:
       - name: Upload coverage report as an artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{github.job}}-code-coverage-report-${{ matrix.php-versions }}
+          name: ${{github.job}}-code-coverage-report-${{ matrix.composer-channel }}-${{ matrix.php-versions }}
           path: ./.coverage-html
           if-no-files-found: error
 
