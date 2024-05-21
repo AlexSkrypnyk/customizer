@@ -173,9 +173,6 @@ protected static function processDescription(string $title, string $answer, arra
 
 ### External questions file
 
-
-## About
-
 You can also place the questions in an external file named `questions.php`
 located anywhere in your project. This file should return an array of questions
 in the same format as the `questions()` method. You can also provide processing
