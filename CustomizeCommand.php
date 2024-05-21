@@ -354,18 +354,20 @@ class CustomizeCommand extends BaseCommand {
 
   /**
    * Cleanup the command.
+   *
+   * @SuppressWarnings(PHPMD.CyclomaticComplexity)
    */
   protected function cleanup(): void {
     $this->packageData = $this->readComposerJson();
 
-    if (is_array($this->packageData['autoload']) && is_array($this->packageData['autoload']['classmap'])) {
+    if (!empty($this->packageData['autoload']) && is_array($this->packageData['autoload']) && !empty($this->packageData['autoload']['classmap']) && is_array($this->packageData['autoload']['classmap'])) {
       $this->packageData['autoload']['classmap'] = array_filter($this->packageData['autoload']['classmap'], static fn($file): bool => !str_contains($file, basename(__FILE__)));
 
       if (empty($this->packageData['autoload']['classmap'])) {
         unset($this->packageData['autoload']['classmap']);
       }
 
-      if (empty($this->packageData['autoload']['classmap'])) {
+      if (empty($this->packageData['autoload'])) {
         unset($this->packageData['autoload']);
       }
     }
