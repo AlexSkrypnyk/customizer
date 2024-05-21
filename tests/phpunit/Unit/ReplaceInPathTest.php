@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace AlexSkrypnyk\Customizer\Tests\Functional;
 
+use AlexSkrypnyk\Customizer\CustomizeCommand;
 use AlexSkrypnyk\Customizer\Tests\Traits\DirsTrait;
 use AlexSkrypnyk\Customizer\Tests\Traits\ReflectionTrait;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\TestStatus\Failure;
-use YourOrg\YourPackage\CustomizeCommand;
 
 /**
  * Test the scaffold create-project command with no-install.

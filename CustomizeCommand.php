@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace YourOrg\YourPackage;
+namespace AlexSkrypnyk\Customizer;
 
 use Composer\Command\BaseCommand;
 use Composer\Console\Input\InputOption;
