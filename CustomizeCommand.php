@@ -65,11 +65,16 @@ class CustomizeCommand extends BaseCommand {
   public Filesystem $fs;
 
   /**
-   * Package data.
+   * Composer package data.
    *
    * @var array<string,mixed>
    */
   public array $packageData;
+
+  /**
+   * Command was called after the Composer dependencies were installed.
+   */
+  public bool $isComposerDependenciesInstalled;
 
   /**
    * Question definitions.
@@ -141,7 +146,7 @@ class CustomizeCommand extends BaseCommand {
     // In addition, you may place the questions in an external file named
     // `questions.php` located anywhere in your project.
     return [
-      'Package name' => [
+      'Name' => [
         // The question callback function defines how the question is asked.
         // In this case, we ask the user to provide a package name as a string.
         'question' => static fn(array $answers, CustomizeCommand $command): mixed => $command->io->ask('Package name', NULL, static function (string $value): string {
@@ -170,7 +175,7 @@ class CustomizeCommand extends BaseCommand {
         // in the title of the question.
         // We are also using a method named 'processDescription' for processing
         // the answer (just for this example).
-        'question' => static fn(array $answers, CustomizeCommand $command): mixed => $command->io->ask(sprintf('Description for %s', $answers['Package name'])),
+        'question' => static fn(array $answers, CustomizeCommand $command): mixed => $command->io->ask(sprintf('Description for %s', $answers['Name'])),
       ],
     ];
   }
@@ -218,6 +223,7 @@ class CustomizeCommand extends BaseCommand {
     $this->cwd = (string) getcwd();
     $this->fs = new Filesystem();
     $this->packageData = $this->readComposerJson();
+    $this->isComposerDependenciesInstalled = file_exists($this->cwd . '/composer.lock') && file_exists($this->cwd . '/vendor');
 
     $this->io->title(sprintf('Welcome to %s project customizer', is_string($this->packageData['name']) ? $this->packageData['name'] : 'the'));
 
@@ -228,6 +234,12 @@ class CustomizeCommand extends BaseCommand {
     ]);
 
     $answers = $this->askQuestions();
+
+    if (empty($answers)) {
+      $this->io->success('No questions were found. No changes were made.');
+
+      return 0;
+    }
 
     $this->io->definitionList(
       ['QUESTIONS' => 'ANSWERS'],
@@ -242,6 +254,8 @@ class CustomizeCommand extends BaseCommand {
     }
 
     $this->process($answers);
+
+    $this->cleanup();
 
     $this->io->newLine();
     $this->io->success('Project was customized.');
@@ -345,8 +359,6 @@ class CustomizeCommand extends BaseCommand {
       $progress->advance();
     }
 
-    $this->cleanup();
-
     $progress->setMessage('Done');
     $progress->finish();
     $this->io->newLine();
@@ -358,35 +370,50 @@ class CustomizeCommand extends BaseCommand {
    * @SuppressWarnings(PHPMD.CyclomaticComplexity)
    */
   protected function cleanup(): void {
-    $this->packageData = $this->readComposerJson();
+    $json = $this->readComposerJson();
 
-    if (!empty($this->packageData['autoload']) && is_array($this->packageData['autoload']) && !empty($this->packageData['autoload']['classmap']) && is_array($this->packageData['autoload']['classmap'])) {
-      $this->packageData['autoload']['classmap'] = array_filter($this->packageData['autoload']['classmap'], static fn($file): bool => !str_contains($file, basename(__FILE__)));
+    if (!empty($json['autoload']) && is_array($json['autoload']) && !empty($json['autoload']['classmap']) && is_array($json['autoload']['classmap'])) {
+      $json['autoload']['classmap'] = array_filter($json['autoload']['classmap'], static fn($file): bool => !str_contains($file, basename(__FILE__)));
 
-      if (empty($this->packageData['autoload']['classmap'])) {
-        unset($this->packageData['autoload']['classmap']);
+      if (empty($json['autoload']['classmap'])) {
+        unset($json['autoload']['classmap']);
       }
 
-      if (empty($this->packageData['autoload'])) {
-        unset($this->packageData['autoload']);
-      }
-    }
-
-    if (is_array($this->packageData['scripts'])) {
-      unset($this->packageData['scripts']['customize']);
-
-      $this->packageData['scripts']['post-create-project-cmd'] = array_filter($this->packageData['scripts']['post-create-project-cmd'], static fn($script): bool => $script !== '@customize');
-      if (empty($this->packageData['scripts']['post-create-project-cmd'])) {
-        unset($this->packageData['scripts']['post-create-project-cmd']);
-      }
-
-      if (empty($this->packageData['scripts'])) {
-        unset($this->packageData['scripts']);
+      if (empty($json['autoload'])) {
+        unset($json['autoload']);
       }
     }
 
-    $this->writeComposerJson($this->packageData);
+    if (is_array($json['scripts'])) {
+      unset($json['scripts']['customize']);
 
+      $json['scripts']['post-create-project-cmd'] = array_filter($json['scripts']['post-create-project-cmd'], static fn($script): bool => $script !== '@customize');
+      if (empty($json['scripts']['post-create-project-cmd'])) {
+        unset($json['scripts']['post-create-project-cmd']);
+      }
+
+      if (empty($json['scripts'])) {
+        unset($json['scripts']);
+      }
+    }
+
+    // If the package data has changed, update the composer.json file.
+    if (strcmp(serialize($this->packageData), serialize($json)) !== 0) {
+      $this->packageData = $json;
+      $this->writeComposerJson($json);
+
+      if ($this->isComposerDependenciesInstalled) {
+        $this->io->writeLn('Updating composer.lock file after customization.');
+        passthru('composer update --quiet --no-interaction --no-progress', $status);
+        if ($status != 0) {
+          // @codeCoverageIgnoreStart
+          throw new \Exception('Command failed with exit code ' . $status);
+          // @codeCoverageIgnoreEnd
+        }
+      }
+    }
+
+    // Remove the command file.
     $this->fs->remove($this->cwd . DIRECTORY_SEPARATOR . basename(__FILE__));
   }
 

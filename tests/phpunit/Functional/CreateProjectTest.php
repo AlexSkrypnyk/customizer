@@ -141,6 +141,38 @@ class CreateProjectTest extends CustomizerTestCase {
   }
 
   #[RunInSeparateProcess]
+  public function testCreateProjectNoInstallNoQuestions(): void {
+    $this->dirs->fs->copy(
+      $this->dirs->fixtures . DIRECTORY_SEPARATOR . 'questions.disabled_all.php',
+      $this->dirs->repo . DIRECTORY_SEPARATOR . CustomizeCommand::QUESTIONS_FILE,
+      TRUE
+    );
+
+    $this->customizerSetAnswers([
+      'testorg/testpackage',
+      self::TUI_ANSWER_NOTHING,
+    ]);
+
+    $this->composerCreateProject(['--no-install' => TRUE]);
+
+    $this->assertComposerCommandSuccessOutputContains('Welcome to yourorg/yourpackage project customizer');
+    $this->assertComposerCommandSuccessOutputContains('No questions were found. No changes were made.');
+
+    $this->assertFileExists('composer.json');
+    $this->assertFileDoesNotExist('composer.lock');
+    $this->assertDirectoryDoesNotExist('vendor');
+
+    $json = $this->composerJsonRead('composer.json');
+    $this->assertJsonValueEquals($json, 'name', 'yourorg/yourpackage');
+    $this->assertJsonValueEquals($json, 'description', 'Your package description');
+    $this->assertJsonHasNoKey($json, 'license');
+
+    $this->assertJsonHasKey($json, 'autoload');
+    $this->assertJsonHasKey($json, 'scripts');
+    $this->assertFileExists($this->commandFile);
+  }
+
+  #[RunInSeparateProcess]
   public function testCreateProjectNoInstallCancel(): void {
     $this->customizerSetAnswers([
       'testorg/testpackage',
@@ -195,6 +227,8 @@ class CreateProjectTest extends CustomizerTestCase {
     $this->assertJsonHasNoKey($json, 'autoload');
     $this->assertJsonHasNoKey($json, 'scripts');
     $this->assertFileDoesNotExist($this->commandFile);
+
+    $this->assertComposerLockUpToDate();
   }
 
   #[RunInSeparateProcess]

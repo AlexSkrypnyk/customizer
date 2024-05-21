@@ -22,8 +22,8 @@
 ## What is this?
 
 A single-file Symfony Console Command class designed to be a drop-in for any
-scaffold, template, or boilerplate project: it provides the functionality to 
-ask user questions and process their answers to customize the project during 
+scaffold, template, or boilerplate project: it provides the functionality to
+ask user questions and process their answers to customize the project during
 the `composer create-project` command.
 
 ## Why?
@@ -112,7 +112,7 @@ protected function questions(): array {
   // In addition, you may place the questions in an external file named
   // `questions.php` located anywhere in your project.
   return [
-    'Package name' => [
+    'Name' => [
       // The question callback function defines how the question is asked.
       // In this case, we ask the user to provide a package name as a string.
       'question' => static fn(array $answers, CustomizeCommand $command): mixed => $command->io->ask('Package name', NULL, static function (string $value): string {
@@ -141,7 +141,7 @@ protected function questions(): array {
       // in the title of the question.
       // We are also using a method named 'processDescription' for processing
       // the answer (just for this example).
-      'question' => static fn(array $answers, CustomizeCommand $command): mixed => $command->io->ask(sprintf('Description for %s', $answers['Package name'])),
+      'question' => static fn(array $answers, CustomizeCommand $command): mixed => $command->io->ask(sprintf('Description for %s', $answers['Name'])),
     ],
   ];
 }
@@ -242,6 +242,9 @@ passed to the processing callbacks:
 - `cwd` - current working directory.
 - `fs` - Symfony file system helper.
 - `io` - Symfony input/output helper.
+- `isComposerDependenciesInstalled` - whether the Composer dependencies were
+   installed before the customizer started. Usually when
+   `composer create-project` ran without `--no-install` option.
 - `readComposerJson()` - Read a value from the `composer.json` file.
 - `writeComposerJson()` - Write a value to the `composer.json` file.
 - `replaceInPath()` - Replace a string in a file or all files in a directory.

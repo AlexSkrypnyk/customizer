@@ -6,6 +6,7 @@ namespace AlexSkrypnyk\Customizer\Tests\Functional;
 
 use AlexSkrypnyk\Customizer\CustomizeCommand;
 use AlexSkrypnyk\Customizer\Tests\Dirs;
+use AlexSkrypnyk\Customizer\Tests\Traits\CmdTrait;
 use AlexSkrypnyk\Customizer\Tests\Traits\ComposerTrait;
 use AlexSkrypnyk\Customizer\Tests\Traits\DirsTrait;
 use AlexSkrypnyk\Customizer\Tests\Traits\JsonAssertTrait;
@@ -23,6 +24,7 @@ class CustomizerTestCase extends TestCase {
   use DirsTrait;
   use JsonAssertions;
   use JsonAssertTrait;
+  use CmdTrait;
 
   /**
    * TUI answer to indicate that the user did not provide any input.
@@ -138,6 +140,12 @@ class CustomizerTestCase extends TestCase {
     ];
 
     $this->tester->run($options + $defaults);
+  }
+
+  protected function assertComposerLockUpToDate(): void {
+    $this->assertFileExists('composer.lock');
+
+    $this->cmdRun('composer validate', $this->dirs->sut);
   }
 
 }
