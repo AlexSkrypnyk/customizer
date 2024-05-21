@@ -32,8 +32,10 @@ use Symfony\Component\Finder\Finder;
  * If you are a scaffold project maintainer and want to use this class to
  * provide a customizer for your project, you can copy this class to your
  * project, adjust the namespace, and implement the `questions()` method or
- * place the questions in an external file named `questions.php` in the root of
+ * place the questions in an external file named `questions.php` anywhere in
  * your project to tailor the customizer to your scaffold's needs.
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
 class CustomizeCommand extends BaseCommand {
 
@@ -129,6 +131,10 @@ class CustomizeCommand extends BaseCommand {
     // project.
     //
     // In this example, we ask for the package name, description, and license.
+    //
+    // You may remove all the questions below and replace them with your own.
+    // In addition, you may place the questions in an external file named
+    // `questions.php` located anywhere in your project.
     return [
       'Package name' => [
         // The question callback function defines how the question is asked.
@@ -166,6 +172,9 @@ class CustomizeCommand extends BaseCommand {
 
   /**
    * Process the description question.
+   *
+   * This is an example callback and it can be safely removed if this question
+   * is not needed.
    *
    * @param string $title
    *   The question title.
@@ -248,6 +257,7 @@ class CustomizeCommand extends BaseCommand {
    *       called. If the method does not exist, there will be no processing.
    *
    * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+   * @SuppressWarnings(PHPMD.NPathComplexity)
    */
   protected function askQuestions(): array {
     $questions = $this->questions();
@@ -258,6 +268,7 @@ class CustomizeCommand extends BaseCommand {
     foreach ($files as $file) {
       if (file_exists($file->getRealPath())) {
         $external_questions = require_once $file->getRealPath();
+        $this->io->writeln(sprintf(' Using questions from %s', $file->getRealPath()));
         if (is_callable($external_questions)) {
           $questions = array_merge($questions, $external_questions($this));
         }
@@ -267,6 +278,12 @@ class CustomizeCommand extends BaseCommand {
 
     $answers = [];
     foreach ($questions as $title => $callbacks) {
+      // Allow to skip questions by settings them to FALSE.
+      if ($callbacks === FALSE) {
+        continue;
+      }
+
+      // Validate the question callback.
       if (!is_callable($callbacks['question'] ?? '')) {
         throw new \RuntimeException(sprintf('Question "%s" must be callable', $title));
       }
@@ -280,7 +297,7 @@ class CustomizeCommand extends BaseCommand {
         throw new \RuntimeException(sprintf('Process callback "%s" must be callable', $answers[$title]['process']));
       }
 
-      // Look for a process method or function.
+      // Look for a process method or global function.
       if (empty($answers[$title]['process'])) {
         $method = str_replace(' ', '', str_replace(['-', '_'], ' ', 'process ' . ucwords($title)));
         if (method_exists($this, $method)) {
@@ -399,6 +416,8 @@ class CustomizeCommand extends BaseCommand {
   /**
    * Read composer.json.
    *
+   * This is a helper method to be used in processing callbacks.
+   *
    * @return array <string,mixed>
    *   Composer.json data as an associative array.
    */
@@ -421,6 +440,8 @@ class CustomizeCommand extends BaseCommand {
   /**
    * Write composer.json.
    *
+   * This is a helper method to be used in processing callbacks.
+   *
    * @param array<string,mixed> $data
    *   Composer.json data as an associative array.
    */
@@ -429,7 +450,9 @@ class CustomizeCommand extends BaseCommand {
   }
 
   /**
-   * Replace in path.
+   * Replace a string in a file or all files in a directory.
+   *
+   * This is a helper method to be used in processing callbacks.
    *
    * @param string $path
    *   Directory or file path.

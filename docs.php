@@ -97,5 +97,7 @@ function extract_comment(string $path, string $class_name): string {
     }
   }
 
+  $comment = (string) preg_replace('/^\s*@SuppressWarnings.*/m', '', $comment);
+
   return rtrim($comment, "\n");
 }
