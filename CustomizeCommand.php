@@ -50,6 +50,22 @@ class CustomizeCommand extends BaseCommand {
   const QUESTIONS_FILE = 'questions.php';
 
   /**
+   * Array of default messages.
+   */
+  const DEFAULT_MESSAGES = [
+    'welcome' => 'Welcome to {{ package.name }} project customizer',
+    'banner' => [
+      'Please answer the following questions to customize your project.',
+      'You will be able to review your answers before proceeding.',
+      'Press Ctrl+C to exit.',
+    ],
+    'proceed' => 'Proceed?',
+    'result_no_changes' => 'No changes were made.',
+    'result_no_questions' => 'No questions were found. No changes were made.',
+    'result_customized' => 'Project was customized.',
+  ];
+
+  /**
    * IO.
    */
   public SymfonyStyle $io;
@@ -225,18 +241,13 @@ class CustomizeCommand extends BaseCommand {
     $this->packageData = $this->readComposerJson();
     $this->isComposerDependenciesInstalled = file_exists($this->cwd . '/composer.lock') && file_exists($this->cwd . '/vendor');
 
-    $this->io->title(sprintf('Welcome to %s project customizer', is_string($this->packageData['name']) ? $this->packageData['name'] : 'the'));
-
-    $this->io->block([
-      'Please answer the following questions to customize your project.',
-      'You will be able to review your answers before proceeding.',
-      'Press Ctrl+C to exit.',
-    ]);
+    $this->io->title($this->message('welcome'));
+    $this->io->block($this->message('banner'));
 
     $answers = $this->askQuestions();
 
     if (empty($answers)) {
-      $this->io->success('No questions were found. No changes were made.');
+      $this->io->success($this->message('result_no_questions'));
 
       return 0;
     }
@@ -247,8 +258,8 @@ class CustomizeCommand extends BaseCommand {
       ...array_map(static fn($q, $a): array => [$q => $a], array_keys($answers), array_column($answers, 'answer'))
     );
 
-    if (!$this->io->confirm('Proceed?')) {
-      $this->io->success('No changes were made.');
+    if (!$this->io->confirm($this->message('proceed'))) {
+      $this->io->success($this->message('result_no_changes'));
 
       return 0;
     }
@@ -258,7 +269,7 @@ class CustomizeCommand extends BaseCommand {
     $this->cleanup();
 
     $this->io->newLine();
-    $this->io->success('Project was customized.');
+    $this->io->success($this->message('result_customized'));
 
     return 0;
   }
@@ -445,6 +456,35 @@ class CustomizeCommand extends BaseCommand {
     }
 
     return new SymfonyStyle($input, $output);
+  }
+
+  /**
+   * Get a message by name.
+   *
+   * @param string $name
+   *   Message name.
+   * @param array<string,string> $tokens
+   *   Tokens to replace in the message keyed by the token name wrapped in
+   *   double curly braces: ['{{ token }}' => 'value']. Current working
+   *   directory and package data are available as tokens by default.
+   *
+   * @return string
+   *   Message.
+   */
+  protected function message(string $name, array $tokens = []): string {
+    if (!isset(self::DEFAULT_MESSAGES[$name])) {
+      throw new \InvalidArgumentException(sprintf('Message "%s" does not exist', $name));
+    }
+
+    // @todo Implement support to retrieve messages from an external file.
+    $message = self::DEFAULT_MESSAGES[$name];
+    $message = is_array($message) ? implode("\n", $message) : $message;
+
+    $tokens += ['{{ cwd }}' => $this->cwd];
+    // Only support top-level composer.json entries for now.
+    $tokens += array_reduce(array_keys($this->packageData), fn($carry, $key) => is_string($this->packageData[$key]) ? $carry + [sprintf('{{ package.%s }}', $key) => $this->packageData[$key]] : $carry, []);
+
+    return strtr($message, $tokens);
   }
 
   /**
