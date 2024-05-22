@@ -4,53 +4,33 @@ namespace AlexSkrypnyk\Customizer;
 
 use Composer\Composer;
 use Composer\EventDispatcher\EventSubscriberInterface;
+use Composer\IO\ConsoleIO;
 use Composer\IO\IOInterface;
 use Composer\Plugin\PluginInterface;
 use Composer\Script\Event;
 use Composer\Script\ScriptEvents;
+use Composer\Util\ProcessExecutor;
+use Symfony\Component\Console\Application;
+use Symfony\Component\Console\Input\StringInput;
+use Symfony\Component\Console\Output\ConsoleOutput;
 
 /**
- * Composer plugin for handling drupal scaffold.
+ * Composer plugin to subscribe to the post create project command event.
  *
- * @internal
+ * We need this plugin because providing `scripts['post-create-project-cmd']`
+ * is not triggered when the package is installed as a dependency.
+ *
+ * A package that requires this plugin as a dependency could use the
+ * `scripts['post-create-project-cmd']` explicitly, but this means that this
+ * package can no longer be easily included in the project.
  */
 class Plugin implements PluginInterface, EventSubscriberInterface {
-
-  /**
-   * The Composer service.
-   *
-   * @var \Composer\Composer
-   */
-  protected $composer;
-
-  /**
-   * Composer's I/O service.
-   *
-   * @var \Composer\IO\IOInterface
-   */
-  protected $io;
-
-  /**
-   * The Composer Scaffold handler.
-   *
-   * @var \Drupal\Composer\Plugin\Scaffold\Handler
-   */
-  protected $handler;
-
-  /**
-   * Record whether the 'require' command was called.
-   *
-   * @param bool
-   */
-  protected $requireWasCalled;
 
   /**
    * {@inheritdoc}
    */
   public function activate(Composer $composer, IOInterface $io) {
-    $this->composer = $composer;
-    $this->io = $io;
-    $this->requireWasCalled = FALSE;
+
   }
 
   /**
@@ -65,18 +45,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
   public function uninstall(Composer $composer, IOInterface $io) {
   }
 
-  //  /**
-  //   * {@inheritdoc}
-  //   */
-  //  public function getCapabilities() {
-  //    return [CommandProvider::class => ScaffoldCommandProvider::class];
-  //  }
-
-  /**
-   * {@inheritdoc}
-   */
   public static function getSubscribedEvents() {
-    // Important note: We only instantiate our handler on "post" events.
     return [
       ScriptEvents::POST_CREATE_PROJECT_CMD => 'postCreateProjectCmd',
     ];
@@ -88,8 +57,30 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
    * @param \Composer\Script\Event $event
    *   The Composer event.
    */
-  public function postCreate(Event $event) {
-    $event->getIO()->alert('Hello from post create project cmd');
+  public function postCreateProjectCmd(Event $event): int {
+    $app = new Application();
+    $app->setAutoExit(FALSE);
+    $cmd = new CustomizeCommand($event->getName());
+    $app->add($cmd);
+    $app->setDefaultCommand((string) $cmd->getName(), TRUE);
+
+    $input = new StringInput(implode(' ', array_map(static function ($arg) {
+      return ProcessExecutor::escape($arg);
+    }, $event->getArguments())));
+
+    if (!$event->getIO() instanceof ConsoleIO) {
+      $reflection = new \ReflectionClass($event->getIO());
+      $property = $reflection->getProperty('output');
+      if (PHP_VERSION_ID < 80100) {
+        $property->setAccessible(TRUE);
+      }
+      $output = $property->getValue($event->getIO());
+    }
+    else {
+      $output = new ConsoleOutput();
+    }
+
+    return $app->run($input, $output);
   }
 
 }

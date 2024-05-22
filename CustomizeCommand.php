@@ -395,7 +395,7 @@ class CustomizeCommand extends BaseCommand {
       }
     }
 
-    if (is_array($json['scripts'])) {
+    if (!empty($json['scripts']) && is_array($json['scripts'])) {
       unset($json['scripts']['customize']);
 
       $json['scripts']['post-create-project-cmd'] = array_filter($json['scripts']['post-create-project-cmd'], static fn($script): bool => $script !== '@customize');
