@@ -4,15 +4,10 @@ namespace AlexSkrypnyk\Customizer;
 
 use Composer\Composer;
 use Composer\EventDispatcher\EventSubscriberInterface;
-use Composer\IO\ConsoleIO;
+use Composer\Installer\PackageEvent;
+use Composer\Installer\PackageEvents;
 use Composer\IO\IOInterface;
 use Composer\Plugin\PluginInterface;
-use Composer\Script\Event;
-use Composer\Script\ScriptEvents;
-use Composer\Util\ProcessExecutor;
-use Symfony\Component\Console\Application;
-use Symfony\Component\Console\Input\StringInput;
-use Symfony\Component\Console\Output\ConsoleOutput;
 
 /**
  * Composer plugin to subscribe to the post create project command event.
@@ -47,40 +42,23 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 
   public static function getSubscribedEvents() {
     return [
-      ScriptEvents::POST_CREATE_PROJECT_CMD => 'postCreateProjectCmd',
+      PackageEvents::POST_PACKAGE_INSTALL => 'postRootPackageInstall',
     ];
   }
 
-  /**
-   * Post command event callback.
-   *
-   * @param \Composer\Script\Event $event
-   *   The Composer event.
-   */
-  public function postCreateProjectCmd(Event $event): int {
-    $app = new Application();
-    $app->setAutoExit(FALSE);
-    $cmd = new CustomizeCommand($event->getName());
-    $app->add($cmd);
-    $app->setDefaultCommand((string) $cmd->getName(), TRUE);
-
-    $input = new StringInput(implode(' ', array_map(static function ($arg) {
-      return ProcessExecutor::escape($arg);
-    }, $event->getArguments())));
-
-    if (!$event->getIO() instanceof ConsoleIO) {
-      $reflection = new \ReflectionClass($event->getIO());
-      $property = $reflection->getProperty('output');
-      if (PHP_VERSION_ID < 80100) {
-        $property->setAccessible(TRUE);
-      }
-      $output = $property->getValue($event->getIO());
+  public function postRootPackageInstall(PackageEvent $event): void {
+    if ($event->getOperation()->getPackage()->getName() == 'alexskrypnyk/customizer') {
+      // When running project creation with installation, the addition of the
+      // package to composer.json will not take effect as Composer will not
+      // be re-reading the contents of the composer.json during events
+      // processing. So we dynamically insert a script into the in-memory
+      // Composer configuration.
+      $package = $event->getComposer()->getPackage();
+      $scripts = $event->getComposer()->getPackage()->getScripts();
+      $scripts['customize'][] = 'AlexSkrypnyk\Customizer\CustomizeCommand';
+      $scripts['post-create-project-cmd'][] = '@customize';
+      $package->setScripts($scripts);
     }
-    else {
-      $output = new ConsoleOutput();
-    }
-
-    return $app->run($input, $output);
   }
 
 }
