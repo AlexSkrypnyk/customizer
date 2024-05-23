@@ -113,7 +113,7 @@ class CreateProjectCommandTest extends CustomizerTestCase {
   #[RunInSeparateProcess]
   public function testCreateProjectNoInstallDisabledQuestionsInQuestionsFile(): void {
     $this->dirs->fs->copy(
-      $this->dirs->fixtures . DIRECTORY_SEPARATOR . 'questions.disabled.php',
+      $this->dirs->fixtures . '/command/questions.disabled.php',
       $this->dirs->repo . DIRECTORY_SEPARATOR . CustomizeCommand::QUESTIONS_FILE,
       TRUE
     );
@@ -145,7 +145,7 @@ class CreateProjectCommandTest extends CustomizerTestCase {
   #[RunInSeparateProcess]
   public function testCreateProjectNoInstallNoQuestions(): void {
     $this->dirs->fs->copy(
-      $this->dirs->fixtures . DIRECTORY_SEPARATOR . 'questions.disabled_all.php',
+      $this->dirs->fixtures . '/command/questions.disabled_all.php',
       $this->dirs->repo . DIRECTORY_SEPARATOR . CustomizeCommand::QUESTIONS_FILE,
       TRUE
     );

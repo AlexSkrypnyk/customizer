@@ -59,7 +59,7 @@ class CustomizerTestCase extends TestCase {
       $dst = $dirs->repo . '/composer.json';
 
       // Copy the composer.json file from fixtures to the repository.
-      $dirs->fs->copy($dirs->fixtures . '/composer.json', $dst);
+      $dirs->fs->copy($dirs->fixtures . '/command/composer.json', $dst);
 
       $json = $this->composerJsonRead($dst);
       // Create an empty command file in the 'system under test' to replicate a
