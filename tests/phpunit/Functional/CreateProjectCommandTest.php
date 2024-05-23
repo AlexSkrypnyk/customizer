@@ -43,7 +43,7 @@ class CreateProjectCommandTest extends CustomizerTestCase {
   }
 
   #[RunInSeparateProcess]
-  public function testCreateProjectNoInstall(): void {
+  public function testCommandNoInstall(): void {
     $this->customizerSetAnswers([
       'testorg/testpackage',
       'Test description',
@@ -72,7 +72,7 @@ class CreateProjectCommandTest extends CustomizerTestCase {
   }
 
   #[RunInSeparateProcess]
-  public function testCreateProjectNoInstallCommandInDifferentDir(): void {
+  public function testCommandNoInstallCommandInDifferentDir(): void {
     $this->dirs->fs->copy(
       $this->dirs->root . DIRECTORY_SEPARATOR . $this->commandFile,
       $this->dirs->repo . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . $this->commandFile
@@ -108,7 +108,7 @@ class CreateProjectCommandTest extends CustomizerTestCase {
   }
 
   #[RunInSeparateProcess]
-  public function testCreateProjectNoInstallNoExternalQuestionsFile(): void {
+  public function testCommandNoInstallNoExternalQuestionsFile(): void {
     $this->dirs->fs->remove($this->dirs->repo . DIRECTORY_SEPARATOR . CustomizeCommand::QUESTIONS_FILE);
 
     $this->customizerSetAnswers([
@@ -137,7 +137,7 @@ class CreateProjectCommandTest extends CustomizerTestCase {
   }
 
   #[RunInSeparateProcess]
-  public function testCreateProjectNoInstallDisabledQuestionsInQuestionsFile(): void {
+  public function testCommandNoInstallDisabledQuestionsInQuestionsFile(): void {
     $this->dirs->fs->copy(
       $this->dirs->fixtures . '/command/questions.disabled.php',
       $this->dirs->repo . DIRECTORY_SEPARATOR . CustomizeCommand::QUESTIONS_FILE,
@@ -169,7 +169,7 @@ class CreateProjectCommandTest extends CustomizerTestCase {
   }
 
   #[RunInSeparateProcess]
-  public function testCreateProjectNoInstallNoQuestions(): void {
+  public function testCommandNoInstallNoQuestions(): void {
     $this->dirs->fs->copy(
       $this->dirs->fixtures . '/command/questions.disabled_all.php',
       $this->dirs->repo . DIRECTORY_SEPARATOR . CustomizeCommand::QUESTIONS_FILE,
@@ -201,7 +201,7 @@ class CreateProjectCommandTest extends CustomizerTestCase {
   }
 
   #[RunInSeparateProcess]
-  public function testCreateProjectNoInstallCancel(): void {
+  public function testCommandNoInstallCancel(): void {
     $this->customizerSetAnswers([
       'testorg/testpackage',
       'Test description',
@@ -229,7 +229,7 @@ class CreateProjectCommandTest extends CustomizerTestCase {
   }
 
   #[RunInSeparateProcess]
-  public function testCreateProjectInstall(): void {
+  public function testCommandInstall(): void {
     $this->customizerSetAnswers([
       'testorg/testpackage',
       'Test description',
@@ -260,7 +260,7 @@ class CreateProjectCommandTest extends CustomizerTestCase {
   }
 
   #[RunInSeparateProcess]
-  public function testCreateProjectInstallCancel(): void {
+  public function testCommandInstallCancel(): void {
     $this->customizerSetAnswers([
       'testorg/testpackage',
       'Test description',
