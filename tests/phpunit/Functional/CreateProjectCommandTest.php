@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AlexSkrypnyk\Customizer\Tests\Functional;
 
 use AlexSkrypnyk\Customizer\CustomizeCommand;
+use AlexSkrypnyk\Customizer\Tests\Dirs;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\RunInSeparateProcess;
 
@@ -14,7 +15,32 @@ use PHPUnit\Framework\Attributes\RunInSeparateProcess;
 #[CoversClass(CustomizeCommand::class)]
 class CreateProjectCommandTest extends CustomizerTestCase {
 
-  protected static string $fixturesDir = 'command';
+  protected function setUp(): void {
+    parent::setUp();
+
+    // Initialize the directories.
+    $this->dirsInit(function (Dirs $dirs): void {
+      $dirs->fs->copy($dirs->fixtures . '/command/composer.json',  $dirs->repo . '/composer.json');
+
+      // Create an empty command file in the 'system under test' to replicate a
+      // real scenario during test where the file is maually copied into a real
+      // project and then removed by the command after customization runs.
+      $dirs->fs->touch($dirs->repo . DIRECTORY_SEPARATOR . $this->commandFile);
+      $dirs->fs->copy($dirs->root . DIRECTORY_SEPARATOR . CustomizeCommand::QUESTIONS_FILE, $dirs->repo . DIRECTORY_SEPARATOR . CustomizeCommand::QUESTIONS_FILE);
+    });
+
+    // Update the 'autoload' to include the command file from the project
+    // root to get code test coverage.
+    $json = $this->composerJsonRead($this->dirs->repo . '/composer.json');
+    $json['autoload']['classmap'] = [$this->dirs->root . DIRECTORY_SEPARATOR . $this->commandFile];
+    $this->composerJsonWrite($this->dirs->repo . '/composer.json', $json);
+
+    // Save the package name for later use in tests.
+    $this->packageName = $json['name'];
+
+    // Change the current working directory to the 'system under test'.
+    chdir($this->dirs->sut);
+  }
 
   #[RunInSeparateProcess]
   public function testCreateProjectNoInstall(): void {
