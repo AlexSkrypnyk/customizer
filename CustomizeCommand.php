@@ -388,26 +388,38 @@ class CustomizeCommand extends BaseCommand {
     static::arrayUnsetDeep($json, ['scripts', 'post-create-project-cmd'], '@customize');
 
     static::arrayUnsetDeep($json, ['require-dev', 'alexskrypnyk/customizer']);
-    static::arrayUnsetDeep($json, ['config', 'allow-plugins', 'alexskrypnyk/customizer']);
 
     // If the package data has changed, update the composer.json file.
     if (strcmp(serialize($this->packageData), serialize($json)) !== 0) {
-      $this->packageData = $json;
       $this->writeComposerJson($json);
 
       if ($this->isComposerDependenciesInstalled) {
         $this->io->writeLn('Updating composer.lock file after customization.');
-        passthru('composer update --quiet --no-interaction --no-progress', $status);
-        if ($status != 0) {
-          // @codeCoverageIgnoreStart
-          throw new \Exception('Command failed with exit code ' . $status);
-          // @codeCoverageIgnoreEnd
+        static::passthru('composer update --quiet --no-interaction --no-progress');
+        // Composer checks for plugins within installed packages, even if the
+        // packages are no longer is `composer.json`. So we need to remove the
+        // plugin from the `composer.json` and update the dependencies again.
+        if (isset($json['config']['allow-plugins']['alexskrypnyk/customizer'])) {
+          static::arrayUnsetDeep($json, ['config', 'allow-plugins', 'alexskrypnyk/customizer']);
+          $this->writeComposerJson($json);
+          passthru('composer update --quiet --no-interaction --no-progress');
         }
       }
     }
 
-    // Remove the command file.
-    $this->fs->remove($this->cwd . DIRECTORY_SEPARATOR . basename(__FILE__));
+    // Find and remove the command file.
+    $finder = Finder::create()->ignoreVCS(TRUE)
+      ->exclude('vendor')
+      ->files()
+      ->in($this->cwd)
+      ->name(basename(__FILE__));
+
+    $file = iterator_to_array($finder->getIterator(), FALSE)[0] ?? NULL;
+    if ($file) {
+      $this->fs->remove($file->getRealPath());
+    }
+
+    $this->packageData = $json;
   }
 
   /**
@@ -467,6 +479,24 @@ class CustomizeCommand extends BaseCommand {
     $tokens += array_reduce(array_keys($this->packageData), fn($carry, $key) => is_string($this->packageData[$key]) ? $carry + [sprintf('{{ package.%s }}', $key) => $this->packageData[$key]] : $carry, []);
 
     return strtr($message, $tokens);
+  }
+
+  /**
+   * Run a command.
+   *
+   * @param string $command
+   *   Command to run.
+   *
+   * @throws \Exception
+   *   If the command fails.
+   */
+  protected static function passthru(string $command): void {
+    passthru($command, $status);
+    if ($status != 0) {
+      // @codeCoverageIgnoreStart
+      throw new \Exception('Command failed with exit code ' . $status);
+      // @codeCoverageIgnoreEnd
+    }
   }
 
   /**

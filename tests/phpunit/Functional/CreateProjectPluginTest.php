@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AlexSkrypnyk\Customizer\Tests\Functional;
 
+use AlexSkrypnyk\Customizer\CustomizeCommand;
 use AlexSkrypnyk\Customizer\Plugin;
 use AlexSkrypnyk\Customizer\Tests\Dirs;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -13,13 +14,14 @@ use PHPUnit\Framework\Attributes\RunInSeparateProcess;
  * Test the scaffold create-project command with no-install.
  */
 #[CoversClass(Plugin::class)]
+#[CoversClass(CustomizeCommand::class)]
 class CreateProjectPluginTest extends CustomizerTestCase {
 
   protected function setUp(): void {
     parent::setUp();
 
-    $this->dirsInit(static function (Dirs $dirs) : void {
-        $dirs->fs->copy($dirs->fixtures . '/plugin/composer.json', $dirs->repo . '/composer.json');
+    $this->dirsInit(static function (Dirs $dirs): void {
+      $dirs->fs->copy($dirs->fixtures . '/plugin/composer.json', $dirs->repo . '/composer.json');
     });
 
     // Projects using this project through a plugin need to have this
@@ -57,7 +59,8 @@ class CreateProjectPluginTest extends CustomizerTestCase {
     $this->assertFileExists('composer.json');
     $this->assertFileExists('composer.lock');
     $this->assertDirectoryExists('vendor');
-    $this->assertDirectoryExists('vendor/alexskrypnyk/customizer');
+    // Plugin will clean up after itself.
+    $this->assertDirectoryDoesNotExist('vendor/alexskrypnyk/customizer');
 
     $json = $this->composerJsonRead('composer.json');
     $this->assertJsonValueEquals($json, 'name', 'testorg/testpackage');
@@ -65,7 +68,7 @@ class CreateProjectPluginTest extends CustomizerTestCase {
     $this->assertJsonValueEquals($json, 'license', 'proprietary');
 
     $this->assertJsonHasNoKey($json, 'autoload');
-    $this->assertJsonHasNoKey($json, 'scripts');
+    $this->assertJsonHasNoKey($json, 'config.allow-plugins');
     $this->assertFileDoesNotExist($this->commandFile);
 
     $this->assertComposerLockUpToDate();

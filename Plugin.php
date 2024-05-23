@@ -23,6 +23,8 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 
   /**
    * {@inheritdoc}
+   *
+   * @codeCoverageIgnore
    */
   public function activate(Composer $composer, IOInterface $io) {
 
@@ -30,12 +32,16 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
 
   /**
    * {@inheritdoc}
+   *
+   * @codeCoverageIgnore
    */
   public function deactivate(Composer $composer, IOInterface $io) {
   }
 
   /**
    * {@inheritdoc}
+   *
+   * @codeCoverageIgnore
    */
   public function uninstall(Composer $composer, IOInterface $io) {
   }
