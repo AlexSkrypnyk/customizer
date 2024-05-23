@@ -248,6 +248,7 @@ passed to the processing callbacks:
 - `readComposerJson()` - Read a value from the `composer.json` file.
 - `writeComposerJson()` - Write a value to the `composer.json` file.
 - `replaceInPath()` - Replace a string in a file or all files in a directory.
+- `arrayUnsetDeep()` - Unset a value in a nested array by path, removing empty arrays.
 
 Question validation helpers are not provided in this class, but you can easily
 create them using custom regular expression of add them from the

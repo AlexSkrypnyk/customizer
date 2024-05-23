@@ -383,30 +383,12 @@ class CustomizeCommand extends BaseCommand {
   protected function cleanup(): void {
     $json = $this->readComposerJson();
 
-    if (!empty($json['autoload']) && is_array($json['autoload']) && !empty($json['autoload']['classmap']) && is_array($json['autoload']['classmap'])) {
-      $json['autoload']['classmap'] = array_filter($json['autoload']['classmap'], static fn($file): bool => !str_contains($file, basename(__FILE__)));
+    static::arrayUnsetDeep($json, ['autoload', 'classmap'], 'src' . basename(__FILE__));
+    static::arrayUnsetDeep($json, ['scripts', 'customize']);
+    static::arrayUnsetDeep($json, ['scripts', 'post-create-project-cmd'], '@customize');
 
-      if (empty($json['autoload']['classmap'])) {
-        unset($json['autoload']['classmap']);
-      }
-
-      if (empty($json['autoload'])) {
-        unset($json['autoload']);
-      }
-    }
-
-    if (!empty($json['scripts']) && is_array($json['scripts'])) {
-      unset($json['scripts']['customize']);
-
-      $json['scripts']['post-create-project-cmd'] = array_filter($json['scripts']['post-create-project-cmd'], static fn($script): bool => $script !== '@customize');
-      if (empty($json['scripts']['post-create-project-cmd'])) {
-        unset($json['scripts']['post-create-project-cmd']);
-      }
-
-      if (empty($json['scripts'])) {
-        unset($json['scripts']);
-      }
-    }
+    unset($json['require-dev']['alexskrypnyk/customizer']);
+    unset($json['config']['allow-plugins']['alexskrypnyk/customizer']);
 
     // If the package data has changed, update the composer.json file.
     if (strcmp(serialize($this->packageData), serialize($json)) !== 0) {
@@ -570,6 +552,44 @@ class CustomizeCommand extends BaseCommand {
 
         if ($new_content !== $file_content) {
           file_put_contents($file_path, $new_content);
+        }
+      }
+    }
+  }
+
+  /**
+   * Unset a value in a nested array by path, removing empty arrays.
+   *
+   * @param array<string|int,mixed> $array
+   *   Array to modify.
+   * @param array<int,string> $path
+   *   Path to the value to unset.
+   * @param string|null $value
+   *   Value to unset. If NULL, the whole key will be unset.
+   */
+  public static function arrayUnsetDeep(array &$array, array $path, ?string $value = NULL): void {
+    $key = array_shift($path);
+
+    if (isset($array[$key])) {
+      if ($path !== []) {
+        if (is_array($array[$key])) {
+          static::arrayUnsetDeep($array[$key], $path, $value);
+
+          if (empty($array[$key])) {
+            unset($array[$key]);
+          }
+        }
+      }
+      else {
+        if ($value !== NULL && is_array($array[$key])) {
+          $array[$key] = array_values(array_filter($array[$key], static fn($item): bool => $item !== $value));
+        }
+        else {
+          unset($array[$key]);
+        }
+
+        if (empty($array[$key])) {
+          unset($array[$key]);
         }
       }
     }

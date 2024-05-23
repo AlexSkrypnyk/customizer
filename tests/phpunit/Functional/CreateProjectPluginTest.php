@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AlexSkrypnyk\Customizer\Tests\Functional;
 
-use AlexSkrypnyk\Customizer\CustomizeCommand;
 use AlexSkrypnyk\Customizer\Plugin;
 use AlexSkrypnyk\Customizer\Tests\Dirs;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -19,8 +18,8 @@ class CreateProjectPluginTest extends CustomizerTestCase {
   protected function setUp(): void {
     parent::setUp();
 
-    $this->dirsInit(function (Dirs $dirs): void {
-      $dirs->fs->copy($dirs->fixtures . '/plugin/composer.json',  $dirs->repo . '/composer.json');
+    $this->dirsInit(static function (Dirs $dirs) : void {
+        $dirs->fs->copy($dirs->fixtures . '/plugin/composer.json', $dirs->repo . '/composer.json');
     });
 
     // Projects using this project through a plugin need to have this
@@ -71,6 +70,5 @@ class CreateProjectPluginTest extends CustomizerTestCase {
 
     $this->assertComposerLockUpToDate();
   }
-
 
 }

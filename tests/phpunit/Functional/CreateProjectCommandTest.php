@@ -20,7 +20,7 @@ class CreateProjectCommandTest extends CustomizerTestCase {
 
     // Initialize the directories.
     $this->dirsInit(function (Dirs $dirs): void {
-      $dirs->fs->copy($dirs->fixtures . '/command/composer.json',  $dirs->repo . '/composer.json');
+      $dirs->fs->copy($dirs->fixtures . '/command/composer.json', $dirs->repo . '/composer.json');
 
       // Create an empty command file in the 'system under test' to replicate a
       // real scenario during test where the file is maually copied into a real
