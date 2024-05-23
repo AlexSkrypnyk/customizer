@@ -12,7 +12,9 @@ use PHPUnit\Framework\Attributes\RunInSeparateProcess;
  * Test the scaffold create-project command with no-install.
  */
 #[CoversClass(CustomizeCommand::class)]
-class CreateProjectTest extends CustomizerTestCase {
+class CreateProjectCommandTest extends CustomizerTestCase {
+
+  protected static string $fixturesDir = 'command';
 
   #[RunInSeparateProcess]
   public function testCreateProjectNoInstall(): void {
@@ -25,7 +27,7 @@ class CreateProjectTest extends CustomizerTestCase {
 
     $this->composerCreateProject(['--no-install' => TRUE]);
 
-    $this->assertComposerCommandSuccessOutputContains('Welcome to yourorg/yourpackage project customizer');
+    $this->assertComposerCommandSuccessOutputContains('Welcome to yourorg/yourtempaltepackage project customizer');
     $this->assertComposerCommandSuccessOutputContains('Project was customized');
 
     $this->assertFileExists('composer.json');
@@ -62,7 +64,7 @@ class CreateProjectTest extends CustomizerTestCase {
 
     $this->composerCreateProject(['--no-install' => TRUE]);
 
-    $this->assertComposerCommandSuccessOutputContains('Welcome to yourorg/yourpackage project customizer');
+    $this->assertComposerCommandSuccessOutputContains('Welcome to yourorg/yourtempaltepackage project customizer');
     $this->assertComposerCommandSuccessOutputContains('Project was customized');
 
     $this->assertFileExists('composer.json');
@@ -91,7 +93,7 @@ class CreateProjectTest extends CustomizerTestCase {
 
     $this->composerCreateProject(['--no-install' => TRUE]);
 
-    $this->assertComposerCommandSuccessOutputContains('Welcome to yourorg/yourpackage project customizer');
+    $this->assertComposerCommandSuccessOutputContains('Welcome to yourorg/yourtempaltepackage project customizer');
     $this->assertComposerCommandSuccessOutputContains('Project was customized');
 
     $this->assertFileExists('composer.json');
@@ -123,7 +125,7 @@ class CreateProjectTest extends CustomizerTestCase {
 
     $this->composerCreateProject(['--no-install' => TRUE]);
 
-    $this->assertComposerCommandSuccessOutputContains('Welcome to yourorg/yourpackage project customizer');
+    $this->assertComposerCommandSuccessOutputContains('Welcome to yourorg/yourtempaltepackage project customizer');
     $this->assertComposerCommandSuccessOutputContains('Project was customized');
 
     $this->assertFileExists('composer.json');
@@ -132,7 +134,7 @@ class CreateProjectTest extends CustomizerTestCase {
 
     $json = $this->composerJsonRead('composer.json');
     $this->assertJsonValueEquals($json, 'name', 'testorg/testpackage');
-    $this->assertJsonValueEquals($json, 'description', 'Your package description');
+    $this->assertJsonValueEquals($json, 'description', 'Your template package description');
     $this->assertJsonHasNoKey($json, 'license');
 
     $this->assertJsonHasNoKey($json, 'autoload');
@@ -155,7 +157,7 @@ class CreateProjectTest extends CustomizerTestCase {
 
     $this->composerCreateProject(['--no-install' => TRUE]);
 
-    $this->assertComposerCommandSuccessOutputContains('Welcome to yourorg/yourpackage project customizer');
+    $this->assertComposerCommandSuccessOutputContains('Welcome to yourorg/yourtempaltepackage project customizer');
     $this->assertComposerCommandSuccessOutputContains('No questions were found. No changes were made.');
 
     $this->assertFileExists('composer.json');
@@ -163,8 +165,8 @@ class CreateProjectTest extends CustomizerTestCase {
     $this->assertDirectoryDoesNotExist('vendor');
 
     $json = $this->composerJsonRead('composer.json');
-    $this->assertJsonValueEquals($json, 'name', 'yourorg/yourpackage');
-    $this->assertJsonValueEquals($json, 'description', 'Your package description');
+    $this->assertJsonValueEquals($json, 'name', 'yourorg/yourtempaltepackage');
+    $this->assertJsonValueEquals($json, 'description', 'Your template package description');
     $this->assertJsonHasNoKey($json, 'license');
 
     $this->assertJsonHasKey($json, 'autoload');
@@ -183,7 +185,7 @@ class CreateProjectTest extends CustomizerTestCase {
 
     $this->composerCreateProject(['--no-install' => TRUE]);
 
-    $this->assertComposerCommandSuccessOutputContains('Welcome to yourorg/yourpackage project customizer');
+    $this->assertComposerCommandSuccessOutputContains('Welcome to yourorg/yourtempaltepackage project customizer');
     $this->assertComposerCommandSuccessOutputContains('No changes were made.');
 
     $this->assertFileExists('composer.json');
@@ -191,8 +193,8 @@ class CreateProjectTest extends CustomizerTestCase {
     $this->assertDirectoryDoesNotExist('vendor');
 
     $json = $this->composerJsonRead('composer.json');
-    $this->assertJsonValueEquals($json, 'name', 'yourorg/yourpackage');
-    $this->assertJsonValueEquals($json, 'description', 'Your package description');
+    $this->assertJsonValueEquals($json, 'name', 'yourorg/yourtempaltepackage');
+    $this->assertJsonValueEquals($json, 'description', 'Your template package description');
     $this->assertJsonHasNoKey($json, 'license');
 
     $this->assertJsonHasKey($json, 'autoload');
@@ -211,7 +213,7 @@ class CreateProjectTest extends CustomizerTestCase {
 
     $this->composerCreateProject();
 
-    $this->assertComposerCommandSuccessOutputContains('Welcome to yourorg/yourpackage project customizer');
+    $this->assertComposerCommandSuccessOutputContains('Welcome to yourorg/yourtempaltepackage project customizer');
     $this->assertComposerCommandSuccessOutputContains('Project was customized');
 
     $this->assertFileExists('composer.json');
@@ -242,7 +244,7 @@ class CreateProjectTest extends CustomizerTestCase {
 
     $this->composerCreateProject();
 
-    $this->assertComposerCommandSuccessOutputContains('Welcome to yourorg/yourpackage project customizer');
+    $this->assertComposerCommandSuccessOutputContains('Welcome to yourorg/yourtempaltepackage project customizer');
     $this->assertComposerCommandSuccessOutputContains('No changes were made.');
 
     $this->assertFileExists('composer.json');
@@ -251,8 +253,8 @@ class CreateProjectTest extends CustomizerTestCase {
     $this->assertDirectoryExists('vendor/monolog/monolog');
 
     $json = $this->composerJsonRead('composer.json');
-    $this->assertJsonValueEquals($json, 'name', 'yourorg/yourpackage');
-    $this->assertJsonValueEquals($json, 'description', 'Your package description');
+    $this->assertJsonValueEquals($json, 'name', 'yourorg/yourtempaltepackage');
+    $this->assertJsonValueEquals($json, 'description', 'Your template package description');
     $this->assertJsonHasNoKey($json, 'license');
 
     $this->assertJsonHasKey($json, 'autoload');
