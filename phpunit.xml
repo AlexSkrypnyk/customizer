@@ -23,6 +23,7 @@
             ignoreIndirectDeprecations="true">
         <include>
             <file>CustomizeCommand.php</file>
+            <file>Plugin.php</file>
         </include>
         <exclude>
             <directory>tests/phpunit</directory>

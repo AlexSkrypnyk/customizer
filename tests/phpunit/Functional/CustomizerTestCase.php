@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AlexSkrypnyk\Customizer\Tests\Functional;
 
 use AlexSkrypnyk\Customizer\CustomizeCommand;
-use AlexSkrypnyk\Customizer\Tests\Dirs;
 use AlexSkrypnyk\Customizer\Tests\Traits\CmdTrait;
 use AlexSkrypnyk\Customizer\Tests\Traits\ComposerTrait;
 use AlexSkrypnyk\Customizer\Tests\Traits\DirsTrait;
@@ -52,34 +51,6 @@ class CustomizerTestCase extends TestCase {
 
     // Initialize the Composer command tester.
     $this->composerCommandInit();
-
-    // Initialize the directories.
-    $this->dirsInit(function (Dirs $dirs): void {
-      // $dirs->repo is a location of the scaffold repository.
-      $dst = $dirs->repo . '/composer.json';
-
-      // Copy the composer.json file from fixtures to the repository.
-      $dirs->fs->copy($dirs->fixtures . '/composer.json', $dst);
-
-      $json = $this->composerJsonRead($dst);
-      // Create an empty command file in the 'system under test' to replicate a
-      // real scenario where the file is copied into a real project and then
-      // removed after customization runs.
-      // Instead of this file, we are using the CustomizeCommand.php in the
-      // root of this project to get code test coverage.
-      $dirs->fs->touch($dirs->repo . DIRECTORY_SEPARATOR . $this->commandFile);
-      $dirs->fs->copy($dirs->root . DIRECTORY_SEPARATOR . CustomizeCommand::QUESTIONS_FILE, $dirs->repo . DIRECTORY_SEPARATOR . CustomizeCommand::QUESTIONS_FILE);
-      // Update the 'autoload' to include the command file from the project
-      // root.
-      $json['autoload']['classmap'] = [$dirs->root . DIRECTORY_SEPARATOR . $this->commandFile];
-      $this->composerJsonWrite($dst, $json);
-
-      // Save the package name for later use in tests.
-      $this->packageName = $json['name'];
-    });
-
-    // Change the current working directory to the 'system under test'.
-    chdir($this->dirs->sut);
   }
 
   /**

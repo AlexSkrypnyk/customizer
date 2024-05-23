@@ -383,49 +383,43 @@ class CustomizeCommand extends BaseCommand {
   protected function cleanup(): void {
     $json = $this->readComposerJson();
 
-    if (!empty($json['autoload']) && is_array($json['autoload']) && !empty($json['autoload']['classmap']) && is_array($json['autoload']['classmap'])) {
-      $json['autoload']['classmap'] = array_filter($json['autoload']['classmap'], static fn($file): bool => !str_contains($file, basename(__FILE__)));
+    static::arrayUnsetDeep($json, ['autoload', 'classmap'], basename(__FILE__), FALSE);
+    static::arrayUnsetDeep($json, ['scripts', 'customize']);
+    static::arrayUnsetDeep($json, ['scripts', 'post-create-project-cmd'], '@customize');
 
-      if (empty($json['autoload']['classmap'])) {
-        unset($json['autoload']['classmap']);
-      }
-
-      if (empty($json['autoload'])) {
-        unset($json['autoload']);
-      }
-    }
-
-    if (is_array($json['scripts'])) {
-      unset($json['scripts']['customize']);
-
-      $json['scripts']['post-create-project-cmd'] = array_filter($json['scripts']['post-create-project-cmd'], static fn($script): bool => $script !== '@customize');
-      if (empty($json['scripts']['post-create-project-cmd'])) {
-        unset($json['scripts']['post-create-project-cmd']);
-      }
-
-      if (empty($json['scripts'])) {
-        unset($json['scripts']);
-      }
-    }
+    static::arrayUnsetDeep($json, ['require-dev', 'alexskrypnyk/customizer']);
 
     // If the package data has changed, update the composer.json file.
     if (strcmp(serialize($this->packageData), serialize($json)) !== 0) {
-      $this->packageData = $json;
       $this->writeComposerJson($json);
 
       if ($this->isComposerDependenciesInstalled) {
         $this->io->writeLn('Updating composer.lock file after customization.');
-        passthru('composer update --quiet --no-interaction --no-progress', $status);
-        if ($status != 0) {
-          // @codeCoverageIgnoreStart
-          throw new \Exception('Command failed with exit code ' . $status);
-          // @codeCoverageIgnoreEnd
+        static::passthru('composer update --quiet --no-interaction --no-progress');
+        // Composer checks for plugins within installed packages, even if the
+        // packages are no longer is `composer.json`. So we need to remove the
+        // plugin from the `composer.json` and update the dependencies again.
+        if (isset($json['config']['allow-plugins']['alexskrypnyk/customizer'])) {
+          static::arrayUnsetDeep($json, ['config', 'allow-plugins', 'alexskrypnyk/customizer']);
+          $this->writeComposerJson($json);
+          passthru('composer update --quiet --no-interaction --no-progress');
         }
       }
     }
 
-    // Remove the command file.
-    $this->fs->remove($this->cwd . DIRECTORY_SEPARATOR . basename(__FILE__));
+    // Find and remove the command file.
+    $finder = Finder::create()->ignoreVCS(TRUE)
+      ->exclude('vendor')
+      ->files()
+      ->in($this->cwd)
+      ->name(basename(__FILE__));
+
+    $file = iterator_to_array($finder->getIterator(), FALSE)[0] ?? NULL;
+    if ($file) {
+      $this->fs->remove($file->getRealPath());
+    }
+
+    $this->packageData = $json;
   }
 
   /**
@@ -485,6 +479,24 @@ class CustomizeCommand extends BaseCommand {
     $tokens += array_reduce(array_keys($this->packageData), fn($carry, $key) => is_string($this->packageData[$key]) ? $carry + [sprintf('{{ package.%s }}', $key) => $this->packageData[$key]] : $carry, []);
 
     return strtr($message, $tokens);
+  }
+
+  /**
+   * Run a command.
+   *
+   * @param string $command
+   *   Command to run.
+   *
+   * @throws \Exception
+   *   If the command fails.
+   */
+  protected static function passthru(string $command): void {
+    passthru($command, $status);
+    if ($status != 0) {
+      // @codeCoverageIgnoreStart
+      throw new \Exception('Command failed with exit code ' . $status);
+      // @codeCoverageIgnoreEnd
+    }
   }
 
   /**
@@ -570,6 +582,55 @@ class CustomizeCommand extends BaseCommand {
 
         if ($new_content !== $file_content) {
           file_put_contents($file_path, $new_content);
+        }
+      }
+    }
+  }
+
+  /**
+   * Unset a value in a nested array by path, removing empty arrays.
+   *
+   * @param array<string|int,mixed> $array
+   *   Array to modify.
+   * @param array<int,string> $path
+   *   Path to the value to unset.
+   * @param string|null $value
+   *   Value to unset. If NULL, the whole key will be unset.
+   * @param bool $exact
+   *   Match value exactly or by substring.
+   *
+   * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+   */
+  public static function arrayUnsetDeep(array &$array, array $path, ?string $value = NULL, bool $exact = TRUE): void {
+    $key = array_shift($path);
+
+    if (isset($array[$key])) {
+      if ($path !== []) {
+        if (is_array($array[$key])) {
+          static::arrayUnsetDeep($array[$key], $path, $value, $exact);
+
+          if (empty($array[$key])) {
+            unset($array[$key]);
+          }
+        }
+      }
+      else {
+        if ($value !== NULL) {
+          if (is_array($array[$key])) {
+            $array[$key] = array_filter($array[$key], static function ($item) use ($value, $exact): bool {
+              return $exact ? $item !== $value : !str_contains($item, $value);
+            });
+            if (count(array_filter(array_keys($array[$key]), 'is_int')) === count($array[$key])) {
+              $array[$key] = array_values($array[$key]);
+            }
+          }
+        }
+        else {
+          unset($array[$key]);
+        }
+
+        if (empty($array[$key])) {
+          unset($array[$key]);
         }
       }
     }

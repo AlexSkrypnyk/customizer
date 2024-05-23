@@ -2,7 +2,7 @@
     "name": "alexskrypnyk/customizer",
     "description": "Customize the project based on the answers provided by the user.",
     "license": "GPL-2.0-or-later",
-    "type": "project",
+    "type": "composer-plugin",
     "authors": [
         {
             "name": "Alex Skrypnyk",
@@ -17,7 +17,8 @@
         "source": "https://github.com/alexskrypnyk/customizer"
     },
     "require": {
-        "php": ">=8.2"
+        "php": ">=8.2",
+        "composer-plugin-api": "^2.0"
     },
     "require-dev": {
         "composer/composer": "^2.7",
@@ -38,9 +39,9 @@
         }
     ],
     "autoload": {
-        "classmap": [
-            "CustomizeCommand.php"
-        ]
+        "psr-4": {
+            "AlexSkrypnyk\\Customizer\\": ""
+        }
     },
     "autoload-dev": {
         "psr-4": {
@@ -49,7 +50,6 @@
     },
     "config": {
         "allow-plugins": {
-            "bamarni/composer-bin-plugin": true,
             "dealerdirect/phpcodesniffer-composer-installer": true,
             "ergebnis/composer-normalize": true
         },
@@ -76,5 +76,8 @@
         ],
         "test": "phpunit --no-coverage",
         "test-coverage": "phpunit"
+    },
+    "extra": {
+        "class": "AlexSkrypnyk\\Customizer\\Plugin"
     }
 }

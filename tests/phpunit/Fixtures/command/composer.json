@@ -1,0 +1,23 @@
+{
+    "name": "yourorg/yourtempaltepackage",
+    "description": "Your template package description",
+    "type": "project",
+    "require": {
+        "php": ">=8.2",
+        "monolog/monolog": "^2.0"
+    },
+    "minimum-stability": "dev",
+    "autoload": {
+        "classmap": [
+            "CustomizeCommand.php"
+        ]
+    },
+    "scripts": {
+        "post-create-project-cmd": [
+            "@customize"
+        ],
+        "customize": [
+            "AlexSkrypnyk\\Customizer\\CustomizeCommand"
+        ]
+    }
+}

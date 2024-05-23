@@ -1,2 +1,0 @@
-First line of the fifth file
-Second line with non-unique string in the middle
