@@ -14,8 +14,8 @@ use PHPUnit\Framework\TestCase;
 class ArrayUnsetDeepTest extends TestCase {
 
   #[DataProvider('dataProviderArrayUnsetDeep')]
-  public function testRemoveByKeyOrValue(array $input, array $path, ?string $value, array $expected): void {
-    CustomizeCommand::arrayUnsetDeep($input, $path, $value);
+  public function testRemoveByKeyOrValue(array $input, array $path, ?string $value, bool $exact, array $expected): void {
+    CustomizeCommand::arrayUnsetDeep($input, $path, $value, $exact);
     $this->assertEquals($expected, $input);
   }
 
@@ -26,6 +26,7 @@ class ArrayUnsetDeepTest extends TestCase {
         [],
         [],
         NULL,
+        TRUE,
         [],
       ],
 
@@ -33,6 +34,7 @@ class ArrayUnsetDeepTest extends TestCase {
         [],
         [],
         'v1',
+        TRUE,
         [],
       ],
 
@@ -40,6 +42,7 @@ class ArrayUnsetDeepTest extends TestCase {
         [],
         ['k1', 'k2'],
         'v1',
+        TRUE,
         [],
       ],
 
@@ -55,6 +58,7 @@ class ArrayUnsetDeepTest extends TestCase {
         ],
         [],
         'v1',
+        TRUE,
         [
           'k1' => [
             'k2' => [
@@ -77,6 +81,7 @@ class ArrayUnsetDeepTest extends TestCase {
         ],
         ['k1', 'k2'],
         NULL,
+        TRUE,
         [],
       ],
 
@@ -91,6 +96,7 @@ class ArrayUnsetDeepTest extends TestCase {
         ],
         ['k1', 'k2'],
         NULL,
+        TRUE,
         [],
       ],
 
@@ -105,6 +111,7 @@ class ArrayUnsetDeepTest extends TestCase {
         ],
         ['k1', 'k11', 'k111'],
         NULL,
+        TRUE,
         [],
       ],
 
@@ -121,6 +128,7 @@ class ArrayUnsetDeepTest extends TestCase {
         ],
         ['k1', 'k2'],
         'v2',
+        TRUE,
         [
           'k1' => [
             'k2' => [
@@ -142,6 +150,7 @@ class ArrayUnsetDeepTest extends TestCase {
         ],
         ['k1', 'k2'],
         'v1',
+        TRUE,
         [],
       ],
 
@@ -154,6 +163,7 @@ class ArrayUnsetDeepTest extends TestCase {
         ],
         ['k1', 'k2'],
         NULL,
+        TRUE,
         [],
       ],
 
@@ -168,6 +178,7 @@ class ArrayUnsetDeepTest extends TestCase {
         ],
         ['k1', 'k2'],
         '',
+        TRUE,
         [
           'k1' => [
             'k2' => [
@@ -189,6 +200,7 @@ class ArrayUnsetDeepTest extends TestCase {
         ],
         ['k11', 'k111'],
         'v111',
+        TRUE,
         [
           'k11' => [
             'k111' => [
@@ -209,6 +221,7 @@ class ArrayUnsetDeepTest extends TestCase {
         ],
         ['k11', 'k111'],
         'v111',
+        TRUE,
         [],
       ],
 
@@ -221,7 +234,59 @@ class ArrayUnsetDeepTest extends TestCase {
         ],
         ['k11', 'k112'],
         NULL,
+        TRUE,
         [],
+      ],
+
+      // Partial match - remove single.
+      [
+        [
+          'k11' => [
+            'k111' => 'v111',
+            'k112' => 'v112',
+          ],
+        ],
+        ['k11'],
+        '2',
+        FALSE,
+        [
+          'k11' => [
+            'k111' => 'v111',
+          ],
+        ],
+      ],
+
+      // Partial match - remove multiple.
+      [
+        [
+          'k11' => [
+            'k111' => 'v111',
+            'k112' => 'v112',
+          ],
+        ],
+        ['k11'],
+        'v',
+        FALSE,
+        [],
+      ],
+
+      // Partial match - remove multiple - negative.
+      [
+        [
+          'k11' => [
+            'k111' => 'v111',
+            'k112' => 'f111',
+            'k113' => 'v112',
+          ],
+        ],
+        ['k11'],
+        'v',
+        FALSE,
+        [
+          'k11' => [
+            'k112' => 'f111',
+          ],
+        ],
       ],
     ];
   }

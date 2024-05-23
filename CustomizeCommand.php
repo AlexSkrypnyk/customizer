@@ -383,12 +383,12 @@ class CustomizeCommand extends BaseCommand {
   protected function cleanup(): void {
     $json = $this->readComposerJson();
 
-    static::arrayUnsetDeep($json, ['autoload', 'classmap'], 'src' . basename(__FILE__));
+    static::arrayUnsetDeep($json, ['autoload', 'classmap'], basename(__FILE__), FALSE);
     static::arrayUnsetDeep($json, ['scripts', 'customize']);
     static::arrayUnsetDeep($json, ['scripts', 'post-create-project-cmd'], '@customize');
 
-    unset($json['require-dev']['alexskrypnyk/customizer']);
-    unset($json['config']['allow-plugins']['alexskrypnyk/customizer']);
+    static::arrayUnsetDeep($json, ['require-dev', 'alexskrypnyk/customizer']);
+    static::arrayUnsetDeep($json, ['config', 'allow-plugins', 'alexskrypnyk/customizer']);
 
     // If the package data has changed, update the composer.json file.
     if (strcmp(serialize($this->packageData), serialize($json)) !== 0) {
@@ -566,14 +566,18 @@ class CustomizeCommand extends BaseCommand {
    *   Path to the value to unset.
    * @param string|null $value
    *   Value to unset. If NULL, the whole key will be unset.
+   * @param bool $exact
+   *   Match value exactly or by substring.
+   *
+   * @SuppressWarnings(PHPMD.CyclomaticComplexity)
    */
-  public static function arrayUnsetDeep(array &$array, array $path, ?string $value = NULL): void {
+  public static function arrayUnsetDeep(array &$array, array $path, ?string $value = NULL, bool $exact = TRUE): void {
     $key = array_shift($path);
 
     if (isset($array[$key])) {
       if ($path !== []) {
         if (is_array($array[$key])) {
-          static::arrayUnsetDeep($array[$key], $path, $value);
+          static::arrayUnsetDeep($array[$key], $path, $value, $exact);
 
           if (empty($array[$key])) {
             unset($array[$key]);
@@ -581,8 +585,15 @@ class CustomizeCommand extends BaseCommand {
         }
       }
       else {
-        if ($value !== NULL && is_array($array[$key])) {
-          $array[$key] = array_values(array_filter($array[$key], static fn($item): bool => $item !== $value));
+        if ($value !== NULL) {
+          if (is_array($array[$key])) {
+            $array[$key] = array_filter($array[$key], static function ($item) use ($value, $exact): bool {
+              return $exact ? $item !== $value : !str_contains($item, $value);
+            });
+            if (count(array_filter(array_keys($array[$key]), 'is_int')) === count($array[$key])) {
+              $array[$key] = array_values($array[$key]);
+            }
+          }
         }
         else {
           unset($array[$key]);
