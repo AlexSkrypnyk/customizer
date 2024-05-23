@@ -1,2 +1,0 @@
-First line of the second file
-non-unique string
