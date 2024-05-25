@@ -1,8 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace AlexSkrypnyk\Customizer;
 
 use Composer\Composer;
+use Composer\DependencyResolver\Operation\InstallOperation;
 use Composer\EventDispatcher\EventSubscriberInterface;
 use Composer\Installer\PackageEvent;
 use Composer\Installer\PackageEvents;
@@ -46,14 +49,21 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
   public function uninstall(Composer $composer, IOInterface $io) {
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public static function getSubscribedEvents() {
     return [
       PackageEvents::POST_PACKAGE_INSTALL => 'postRootPackageInstall',
     ];
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function postRootPackageInstall(PackageEvent $event): void {
-    if ($event->getOperation()->getPackage()->getName() == 'alexskrypnyk/customizer') {
+    $operation = $event->getOperation();
+    if ($operation instanceof InstallOperation && $operation->getPackage()->getName() === 'alexskrypnyk/customizer') {
       // When running project creation with installation, the addition of the
       // package to composer.json will not take effect as Composer will not
       // be re-reading the contents of the composer.json during events
@@ -61,7 +71,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
       // Composer configuration.
       $package = $event->getComposer()->getPackage();
       $scripts = $event->getComposer()->getPackage()->getScripts();
-      $scripts['customize'][] = 'AlexSkrypnyk\Customizer\CustomizeCommand';
+      $scripts['customize'][] = CustomizeCommand::class;
       $scripts['post-create-project-cmd'][] = '@customize';
       $package->setScripts($scripts);
     }
