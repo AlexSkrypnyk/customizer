@@ -25,10 +25,12 @@ trait DirsTrait {
    *
    * @param callable|null $cb
    *   Callback to run after initialization.
+   * @param string|null $root
+   *   The root directory.
    */
-  protected function dirsInit(?callable $cb = NULL): void {
+  protected function dirsInit(?callable $cb = NULL, string $root = NULL): void {
     $this->dirs = new Dirs();
-    $this->dirs->initLocations($cb);
+    $this->dirs->initLocations($cb, $root);
   }
 
   /**

@@ -66,7 +66,7 @@ class CustomizerTestCase extends TestCase {
       $dirs->fs->copy($dirs->root . DIRECTORY_SEPARATOR . static::$composerJsonFile, $dirs->repo . '/composer.json');
       // Copy the configuration file.
       $dirs->fs->copy($dirs->root . DIRECTORY_SEPARATOR . CustomizeCommand::CONFIG_FILE, $dirs->repo . DIRECTORY_SEPARATOR . CustomizeCommand::CONFIG_FILE);
-    });
+    }, (string) getcwd());
 
     // Projects using this project through a plugin need to have this
     // repository added to their composer.json to be able to download it
