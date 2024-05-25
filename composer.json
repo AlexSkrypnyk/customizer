@@ -1,6 +1,6 @@
 {
     "name": "alexskrypnyk/customizer",
-    "description": "Customize the project based on the answers provided by the user.",
+    "description": "Interactive customization for template projects",
     "license": "GPL-2.0-or-later",
     "type": "composer-plugin",
     "authors": [
