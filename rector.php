@@ -28,6 +28,8 @@ use Rector\TypeDeclaration\Rector\StmtsAwareInterface\DeclareStrictTypesRector;
 return static function (RectorConfig $rectorConfig): void {
   $rectorConfig->paths([
     __DIR__ . '/CustomizeCommand.php',
+    __DIR__ . '/Plugin.php',
+    __DIR__ . '/.customizer.php',
     __DIR__ . '/tests/phpunit',
   ]);
 

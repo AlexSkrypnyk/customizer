@@ -7,10 +7,11 @@ namespace AlexSkrypnyk\Customizer\Tests\Functional;
 use AlexSkrypnyk\Customizer\CustomizeCommand;
 use AlexSkrypnyk\Customizer\Tests\Dirs;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\RunInSeparateProcess;
 
 /**
- * Test the scaffold create-project command with no-install.
+ * Test Customizer as a single-file drop-in during `composer create-project`.
  */
 #[CoversClass(CustomizeCommand::class)]
 class CreateProjectCommandTest extends CustomizerTestCase {
@@ -21,12 +22,12 @@ class CreateProjectCommandTest extends CustomizerTestCase {
     // Initialize the directories.
     $this->dirsInit(function (Dirs $dirs): void {
       $dirs->fs->copy($dirs->fixtures . '/command/composer.json', $dirs->repo . '/composer.json');
-
       // Create an empty command file in the 'system under test' to replicate a
-      // real scenario during test where the file is maually copied into a real
+      // real scenario during test where the file is manually copied into a real
       // project and then removed by the command after customization runs.
       $dirs->fs->touch($dirs->repo . DIRECTORY_SEPARATOR . $this->commandFile);
-      $dirs->fs->copy($dirs->root . DIRECTORY_SEPARATOR . CustomizeCommand::QUESTIONS_FILE, $dirs->repo . DIRECTORY_SEPARATOR . CustomizeCommand::QUESTIONS_FILE);
+      // Copy the configuration file.
+      $dirs->fs->copy($dirs->root . DIRECTORY_SEPARATOR . CustomizeCommand::CONFIG_FILE, $dirs->repo . DIRECTORY_SEPARATOR . CustomizeCommand::CONFIG_FILE);
     });
 
     // Update the 'autoload' to include the command file from the project
@@ -43,6 +44,8 @@ class CreateProjectCommandTest extends CustomizerTestCase {
   }
 
   #[RunInSeparateProcess]
+  #[Group('no-install')]
+  #[Group('smoke')]
   public function testCommandNoInstall(): void {
     $this->customizerSetAnswers([
       'testorg/testpackage',
@@ -53,7 +56,7 @@ class CreateProjectCommandTest extends CustomizerTestCase {
 
     $this->composerCreateProject(['--no-install' => TRUE]);
 
-    $this->assertComposerCommandSuccessOutputContains('Welcome to yourorg/yourtempaltepackage project customizer');
+    $this->assertComposerCommandSuccessOutputContains('Welcome to the yourorg/yourtempaltepackage project customizer');
     $this->assertComposerCommandSuccessOutputContains('Project was customized');
 
     $this->assertFileExists('composer.json');
@@ -72,6 +75,7 @@ class CreateProjectCommandTest extends CustomizerTestCase {
   }
 
   #[RunInSeparateProcess]
+  #[Group('no-install')]
   public function testCommandNoInstallCommandInDifferentDir(): void {
     $this->dirs->fs->copy(
       $this->dirs->root . DIRECTORY_SEPARATOR . $this->commandFile,
@@ -90,7 +94,7 @@ class CreateProjectCommandTest extends CustomizerTestCase {
 
     $this->composerCreateProject(['--no-install' => TRUE]);
 
-    $this->assertComposerCommandSuccessOutputContains('Welcome to yourorg/yourtempaltepackage project customizer');
+    $this->assertComposerCommandSuccessOutputContains('Welcome to the yourorg/yourtempaltepackage project customizer');
     $this->assertComposerCommandSuccessOutputContains('Project was customized');
 
     $this->assertFileExists('composer.json');
@@ -108,76 +112,11 @@ class CreateProjectCommandTest extends CustomizerTestCase {
   }
 
   #[RunInSeparateProcess]
-  public function testCommandNoInstallNoExternalQuestionsFile(): void {
-    $this->dirs->fs->remove($this->dirs->repo . DIRECTORY_SEPARATOR . CustomizeCommand::QUESTIONS_FILE);
+  #[Group('no-install')]
+  public function testCommandNoInstallNoConfigFile(): void {
+    $this->dirs->fs->remove($this->dirs->repo . DIRECTORY_SEPARATOR . CustomizeCommand::CONFIG_FILE);
 
     $this->customizerSetAnswers([
-      'testorg/testpackage',
-      'Test description',
-      self::TUI_ANSWER_NOTHING,
-    ]);
-
-    $this->composerCreateProject(['--no-install' => TRUE]);
-
-    $this->assertComposerCommandSuccessOutputContains('Welcome to yourorg/yourtempaltepackage project customizer');
-    $this->assertComposerCommandSuccessOutputContains('Project was customized');
-
-    $this->assertFileExists('composer.json');
-    $this->assertFileDoesNotExist('composer.lock');
-    $this->assertDirectoryDoesNotExist('vendor');
-
-    $json = $this->composerJsonRead('composer.json');
-    $this->assertJsonValueEquals($json, 'name', 'testorg/testpackage');
-    $this->assertJsonValueEquals($json, 'description', 'Test description');
-    $this->assertJsonHasNoKey($json, 'license');
-
-    $this->assertJsonHasNoKey($json, 'autoload');
-    $this->assertJsonHasNoKey($json, 'scripts');
-    $this->assertFileDoesNotExist($this->commandFile);
-  }
-
-  #[RunInSeparateProcess]
-  public function testCommandNoInstallDisabledQuestionsInQuestionsFile(): void {
-    $this->dirs->fs->copy(
-      $this->dirs->fixtures . '/command/questions.disabled.php',
-      $this->dirs->repo . DIRECTORY_SEPARATOR . CustomizeCommand::QUESTIONS_FILE,
-      TRUE
-    );
-
-    $this->customizerSetAnswers([
-      'testorg/testpackage',
-      self::TUI_ANSWER_NOTHING,
-    ]);
-
-    $this->composerCreateProject(['--no-install' => TRUE]);
-
-    $this->assertComposerCommandSuccessOutputContains('Welcome to yourorg/yourtempaltepackage project customizer');
-    $this->assertComposerCommandSuccessOutputContains('Project was customized');
-
-    $this->assertFileExists('composer.json');
-    $this->assertFileDoesNotExist('composer.lock');
-    $this->assertDirectoryDoesNotExist('vendor');
-
-    $json = $this->composerJsonRead('composer.json');
-    $this->assertJsonValueEquals($json, 'name', 'testorg/testpackage');
-    $this->assertJsonValueEquals($json, 'description', 'Your template package description');
-    $this->assertJsonHasNoKey($json, 'license');
-
-    $this->assertJsonHasNoKey($json, 'autoload');
-    $this->assertJsonHasNoKey($json, 'scripts');
-    $this->assertFileDoesNotExist($this->commandFile);
-  }
-
-  #[RunInSeparateProcess]
-  public function testCommandNoInstallNoQuestions(): void {
-    $this->dirs->fs->copy(
-      $this->dirs->fixtures . '/command/questions.disabled_all.php',
-      $this->dirs->repo . DIRECTORY_SEPARATOR . CustomizeCommand::QUESTIONS_FILE,
-      TRUE
-    );
-
-    $this->customizerSetAnswers([
-      'testorg/testpackage',
       self::TUI_ANSWER_NOTHING,
     ]);
 
@@ -201,6 +140,7 @@ class CreateProjectCommandTest extends CustomizerTestCase {
   }
 
   #[RunInSeparateProcess]
+  #[Group('no-install')]
   public function testCommandNoInstallCancel(): void {
     $this->customizerSetAnswers([
       'testorg/testpackage',
@@ -211,7 +151,7 @@ class CreateProjectCommandTest extends CustomizerTestCase {
 
     $this->composerCreateProject(['--no-install' => TRUE]);
 
-    $this->assertComposerCommandSuccessOutputContains('Welcome to yourorg/yourtempaltepackage project customizer');
+    $this->assertComposerCommandSuccessOutputContains('Welcome to the yourorg/yourtempaltepackage project customizer');
     $this->assertComposerCommandSuccessOutputContains('No changes were made.');
 
     $this->assertFileExists('composer.json');
@@ -229,6 +169,7 @@ class CreateProjectCommandTest extends CustomizerTestCase {
   }
 
   #[RunInSeparateProcess]
+  #[Group('install')]
   public function testCommandInstall(): void {
     $this->customizerSetAnswers([
       'testorg/testpackage',
@@ -239,7 +180,7 @@ class CreateProjectCommandTest extends CustomizerTestCase {
 
     $this->composerCreateProject();
 
-    $this->assertComposerCommandSuccessOutputContains('Welcome to yourorg/yourtempaltepackage project customizer');
+    $this->assertComposerCommandSuccessOutputContains('Welcome to the yourorg/yourtempaltepackage project customizer');
     $this->assertComposerCommandSuccessOutputContains('Project was customized');
 
     $this->assertFileExists('composer.json');
@@ -270,7 +211,7 @@ class CreateProjectCommandTest extends CustomizerTestCase {
 
     $this->composerCreateProject();
 
-    $this->assertComposerCommandSuccessOutputContains('Welcome to yourorg/yourtempaltepackage project customizer');
+    $this->assertComposerCommandSuccessOutputContains('Welcome to the yourorg/yourtempaltepackage project customizer');
     $this->assertComposerCommandSuccessOutputContains('No changes were made.');
 
     $this->assertFileExists('composer.json');

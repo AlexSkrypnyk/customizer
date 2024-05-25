@@ -18,24 +18,25 @@ use Symfony\Component\Finder\Finder;
 /**
  * Customize the project based on the answers provided by the user.
  *
- * This is a single-file Symfony Console Command class designed to be a drop-in
- * for any scaffold, template, or boilerplate project. It provides a way to ask
- * questions and process answers to customize user's project.
- *
- * It is designed to be called during the `composer create-project` command,
- * including when it is run with the `--no-install` option. It relies only on
- * the components provided by Composer.
+ * This is a single-file Symfony Console Command class designed to work without
+ * any additional dependencies (apart from dependencies provided by Composer)
+ * during the `composer create-project` command ran with the `--no-install`.
+ * It provides a way to ask questions and process answers to customize user's
+ * project started from your scaffold project.
  *
  * It also supports passing answers as a JSON string via the `--answers` option
  * or the `CUSTOMIZER_ANSWERS` environment variable.
  *
- * If you are a scaffold project maintainer and want to use this class to
- * provide a customizer for your project, you can copy this class to your
- * project, adjust the namespace, and implement the `questions()` method or
- * place the questions in an external file named `questions.php` anywhere in
- * your project to tailor the customizer to your scaffold's needs.
+ * If you are a scaffold project maintainer, and want to allow customisations
+ * to your user's project without installing dependencies, you would need
+ * to copy this class to your project, adjust the namespace, and implement the
+ * `questions()` method.
  *
- * Please leave this link in your project to help others find this tool.
+ * If, however, you do not want to support `--no-install` mode, you should use
+ * this project as a dev dependency of your scaffold project and simply provide
+ * a configuration file with questions and processing callbacks.
+ *
+ * Please keep this link in your project to help others find this tool.
  * Thank you!
  *
  * @see https://github.com/alexSkrypnyk/customizer
@@ -45,25 +46,9 @@ use Symfony\Component\Finder\Finder;
 class CustomizeCommand extends BaseCommand {
 
   /**
-   * Defines the file name for an optional external file with questions.
+   * Defines the file name for an optional external configuration file.
    */
-  const QUESTIONS_FILE = 'questions.php';
-
-  /**
-   * Array of default messages.
-   */
-  const DEFAULT_MESSAGES = [
-    'welcome' => 'Welcome to {{ package.name }} project customizer',
-    'banner' => [
-      'Please answer the following questions to customize your project.',
-      'You will be able to review your answers before proceeding.',
-      'Press Ctrl+C to exit.',
-    ],
-    'proceed' => 'Proceed?',
-    'result_no_changes' => 'No changes were made.',
-    'result_no_questions' => 'No questions were found. No changes were made.',
-    'result_customized' => 'Project was customized.',
-  ];
+  const CONFIG_FILE = '.customizer.php';
 
   /**
    * IO.
@@ -93,131 +78,24 @@ class CustomizeCommand extends BaseCommand {
   public bool $isComposerDependenciesInstalled;
 
   /**
-   * Question definitions.
+   * A map of questions and their processing callbacks.
    *
-   * Define questions and their processing callbacks. Questions will be asked
-   * in the order they are defined. Questions can use answers from previous
-   * questions received so far.
+   * Can be provided by the `questions()` method in this class or an external
+   * configuration file.
    *
-   * In addition to the questions defined here, you can also define questions
-   * in an external file named `questions.php` located next to the command
-   * file. The external file should return a callable that returns an array
-   * of questions.
-   *
-   * Answers will be processed in the order they are defined. Process callbacks
-   * have access to all answers and current class' properties and methods.
-   * If a question does not have a process callback, a method prefixed with
-   * 'process' and a camel cased question title will be called. If the method
-   * does not exist, a global function with the same name will be called.
-   * If neither method nor function exists, there will be no processing.
-   *
-   * @code
-   * $questions['Machine name'] = [
-   *   // Question callback function.
-   *   'question' => fn(array $answers) => $this->io->ask(
-   *     // Question text to show to the user.
-   *     'What is your machine name',
-   *     // Default answer.
-   *     Str2Name::machine(basename($this->cwd)),
-   *     // Answer validation function.
-   *     static fn(string $string): string => strtolower($string)
-   *   ),
-   *   // Process callback function.
-   *   'process' => function (string $title, string $answer, array $answers): void {
-   *     // Remove a directory using 'fs' and `cwd` class properties.
-   *     $this->fs->removeDirectory($this->cwd . '/somedir');
-   *     // Replace a string in a file using 'cwd' class property and
-   *     /  'replaceInPath' method.
-   *     $this->replaceInPath($this->cwd . '/somefile', 'old', 'new');
-   *     // Replace a string in al files in a directory.
-   *     $this->replaceInPath($this->cwd . '/somedir', 'old', 'new');
-   *   },
-   * ];
-   * @endcode
-   *
-   * @return array<string,array<string,string|callable>>
-   *   An associative array of questions with question title as key and the
-   *   question data array with the following keys:
-   *   - question: The question callback function used to ask the question. The
-   *     callback receives an associative array of all answers received so far.
-   *   - process: The callback function used to process the answer. Callback can
-   *     be an anonymous function or a method of this class as
-   *     process<PascalCasedQuestion>. The callback will receive the following
-   *     arguments:
-   *     - title: The current question title.
-   *     - answer: The answer to the current question.
-   *     - answers: An associative array of all answers.
-   *
-   * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-   * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+   * @var array<string,array<string,string|callable>>
    */
-  protected function questions(): array {
-    // This an example of questions that can be asked to customize the project.
-    // You can adjust this method to ask questions that are relevant to your
-    // project.
-    //
-    // In this example, we ask for the package name, description, and license.
-    //
-    // You may remove all the questions below and replace them with your own.
-    // In addition, you may place the questions in an external file named
-    // `questions.php` located anywhere in your project.
-    return [
-      'Name' => [
-        // The question callback function defines how the question is asked.
-        // In this case, we ask the user to provide a package name as a string.
-        'question' => static fn(array $answers, CustomizeCommand $command): mixed => $command->io->ask('Package name', NULL, static function (string $value): string {
-          // This is a validation callback that checks if the package name is
-          // valid. If not, an exception is thrown.
-          if (!preg_match('/^[a-z0-9_.-]+\/[a-z0-9_.-]+$/', $value)) {
-            throw new \InvalidArgumentException(sprintf('The package name "%s" is invalid, it should be lowercase and have a vendor name, a forward slash, and a package name.', $value));
-          }
-
-          return $value;
-        }),
-        // The process callback function defines how the answer is processed.
-        // The processing takes place only after all answers are received and
-        // the user confirms the changes.
-        'process' => static function (string $title, string $answer, array $answers, CustomizeCommand $command): void {
-          // Update the package data.
-          $command->packageData['name'] = $answer;
-          // Write the updated composer.json file.
-          $command->writeComposerJson($command->packageData);
-          // Also, replace the package name in the project files.
-          $command->replaceInPath($command->cwd, $answer, $answer);
-        },
-      ],
-      'Description' => [
-        // For this question, we are using an answer from the previous question
-        // in the title of the question.
-        // We are also using a method named 'processDescription' for processing
-        // the answer (just for this example).
-        'question' => static fn(array $answers, CustomizeCommand $command): mixed => $command->io->ask(sprintf('Description for %s', $answers['Name'])),
-      ],
-    ];
-  }
+  protected array $questionsMap;
 
   /**
-   * Process the description question.
+   * Messages map.
    *
-   * This is an example callback and it can be safely removed if this question
-   * is not needed.
+   * Can be provided by the `messages()` method in this or an external
+   * configuration file.
    *
-   * @param string $title
-   *   The question title.
-   * @param string $answer
-   *   The answer to the question.
-   * @param array<string,string> $answers
-   *   All answers received so far.
-   * @param CustomizeCommand $command
-   *   The command instance.
-   *
-   * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+   * @var array<string,string|array<string>>
    */
-  protected static function processDescription(string $title, string $answer, array $answers, CustomizeCommand $command): void {
-    $command->packageData['description'] = $answer;
-    $command->writeComposerJson($command->packageData);
-    $command->replaceInPath($command->cwd, $answer, $answer);
-  }
+  protected array $messagesMap;
 
   /**
    * {@inheritdoc}
@@ -238,6 +116,7 @@ class CustomizeCommand extends BaseCommand {
     $this->io = $this->initIo($input, $output);
     $this->cwd = (string) getcwd();
     $this->fs = new Filesystem();
+    $this->initConfig();
     $this->packageData = $this->readComposerJson();
     $this->isComposerDependenciesInstalled = file_exists($this->cwd . '/composer.lock') && file_exists($this->cwd . '/vendor');
 
@@ -277,7 +156,7 @@ class CustomizeCommand extends BaseCommand {
   /**
    * Collect questions from self::questions(), ask them and return the answers.
    *
-   * @return array<string,array<string,string|callable>>
+   * @return array<string, array{answer: string, process: (callable(): mixed)|string|null}>
    *   The answers to the questions as an associative array:
    *   - key: The question key.
    *   - value: An associative array with the following keys:
@@ -290,55 +169,13 @@ class CustomizeCommand extends BaseCommand {
    * @SuppressWarnings(PHPMD.NPathComplexity)
    */
   protected function askQuestions(): array {
-    $questions = $this->questions();
-
-    // Check if there is an external questions file, require it and merge the
-    // questions.
-    $files = (new Finder())->in($this->cwd)->name(self::QUESTIONS_FILE)->files();
-    foreach ($files as $file) {
-      if (file_exists($file->getRealPath())) {
-        $external_questions = require_once $file->getRealPath();
-        $this->io->writeln(sprintf(' Using questions from %s', $file->getRealPath()));
-        if (is_callable($external_questions)) {
-          $questions = array_merge($questions, $external_questions($this));
-        }
-        break;
-      }
-    }
+    $questions = $this->questionsMap;
 
     $answers = [];
     foreach ($questions as $title => $callbacks) {
-      // Allow to skip questions by settings them to FALSE.
-      if ($callbacks === FALSE) {
-        continue;
-      }
-
-      // Validate the question callback.
-      if (!is_callable($callbacks['question'] ?? '')) {
-        throw new \RuntimeException(sprintf('Question "%s" must be callable', $title));
-      }
-
-      // Ask the question and store the answer.
-      $answers[$title]['answer'] = (string) $callbacks['question'](array_combine(array_keys($answers), array_column($answers, 'answer')), $this);
-
-      // Validate the process callback.
-      $answers[$title]['process'] = $callbacks['process'] ?? NULL;
-      if (!empty($answers[$title]['process']) && !is_callable($answers[$title]['process'])) {
-        throw new \RuntimeException(sprintf('Process callback "%s" must be callable', $answers[$title]['process']));
-      }
-
-      // Look for a process method or global function.
-      if (empty($answers[$title]['process'])) {
-        $method = str_replace(' ', '', str_replace(['-', '_'], ' ', 'process ' . ucwords($title)));
-        if (method_exists($this, $method)) {
-          if (!is_callable([$this, $method])) {
-            throw new \RuntimeException(sprintf('Process method "%s" must be callable', $method));
-          }
-          $answers[$title]['process'] = [$this, $method];
-        }
-        elseif (function_exists($method)) {
-          $answers[$title]['process'] = $method;
-        }
+      if (is_callable($callbacks['question'])) {
+        $answers[$title]['answer'] = (string) $callbacks['question'](array_combine(array_keys($answers), array_column($answers, 'answer')), $this);
+        $answers[$title]['process'] = $callbacks['process'] ?? NULL;
       }
     }
 
@@ -348,7 +185,7 @@ class CustomizeCommand extends BaseCommand {
   /**
    * Process questions.
    *
-   * @param array<string,array<string,string|callable>> $answers
+   * @param non-empty-array<string,array{answer: string, process: (callable(): mixed)|string|null}> $answers
    *   Prompts.
    */
   protected function process(array $answers): void {
@@ -429,6 +266,8 @@ class CustomizeCommand extends BaseCommand {
     $answers = getenv('CUSTOMIZER_ANSWERS');
     $answers = $answers ?: $input->getOption('answers');
 
+    // Convert the answers to an input stream to be used for interactive
+    // prompts.
     if ($answers && is_string($answers)) {
       $answers = json_decode($answers, TRUE);
 
@@ -453,6 +292,102 @@ class CustomizeCommand extends BaseCommand {
   }
 
   /**
+   * Initialize the configuration.
+   *
+   * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+   * @SuppressWarnings(PHPMD.NPathComplexity)
+   */
+  protected function initConfig(): void {
+    $messages = static::messages($this);
+    $questions = static::questions($this);
+
+    $config_class = $this->loadConfigClass(self::CONFIG_FILE, $this->cwd);
+
+    // Collect maps from the config class.
+    if ($config_class) {
+      if (method_exists($config_class, 'messages')) {
+        $messages = array_replace_recursive($messages, $config_class::messages($this));
+      }
+      if (method_exists($config_class, 'questions')) {
+        $questions = $config_class::questions($this);
+      }
+    }
+
+    // Validate messages structure.
+    foreach ($messages as $name => $message) {
+      if (!is_string($message) && !is_array($message)) {
+        throw new \RuntimeException(sprintf('Message "%s" must be a string or an array', $name));
+      }
+    }
+    $this->messagesMap = $messages;
+
+    // Validate questions structure.
+    foreach ($questions as $title => $callbacks) {
+      if (!is_callable($callbacks['question'] ?? '')) {
+        throw new \RuntimeException(sprintf('Question "%s" must be callable', $title));
+      }
+
+      // Discover process callbacks.
+      if (empty($callbacks['process'])) {
+        $method = str_replace(' ', '', str_replace(['-', '_'], ' ', 'process ' . ucwords($title)));
+
+        // Method in the config class has a higher priority to allow the
+        // overrides of any methods provided by the current class.
+        if (!empty($config_class) && method_exists($config_class, $method)) {
+          $questions[$title]['process'] = [$config_class, $method];
+        }
+        elseif (method_exists($this, $method)) {
+          $questions[$title]['process'] = [$this, $method];
+        }
+      }
+
+      if (!is_callable($questions[$title]['process'])) {
+        throw new \RuntimeException(sprintf('Process callback "%s" must be callable', implode('::', $questions[$title]['process'])));
+      }
+    }
+    $this->questionsMap = $questions;
+  }
+
+  /**
+   * Find and include an external configuration file.
+   *
+   * Because this class can be used as a **single-file** drop-in into other
+   * projects, we cannot enforce the config file to be based either on the
+   * interface (this would be a second file) or the namespace (scaffold
+   * project owners can choose to place this file anywhere in their file
+   * structure and give it a custom namespace based on that location). So we
+   * have to manually look for the file, load it, and discover the class name.
+   *
+   * @return string|null
+   *   The name of the config class.
+   *
+   * @throws \Exception
+   */
+  protected function loadConfigClass(string $file_name, string $cwd): ?string {
+    $class_name = NULL;
+
+    $this->debug('Looking for config class in file "%s" within directory "%s".', $file_name, $cwd);
+    $files = (new Finder())->in($cwd)->ignoreDotFiles(FALSE)->name($file_name)->files();
+
+    foreach ($files as $file) {
+      $classes_before = get_declared_classes();
+      require_once $file->getRealPath();
+      $new_classes = array_diff(get_declared_classes(), $classes_before);
+
+      if (count($new_classes) > 1) {
+        throw new \Exception(sprintf('Multiple classes found in the config file "%s".', $file->getRealPath()));
+      }
+
+      $class_name = array_pop($new_classes);
+      $this->debug('Using config class "%s" from file "%s".', (string) $class_name, $file->getRealPath());
+
+      break;
+    }
+
+    return $class_name;
+  }
+
+  /**
    * Get a message by name.
    *
    * @param string $name
@@ -466,17 +401,20 @@ class CustomizeCommand extends BaseCommand {
    *   Message.
    */
   protected function message(string $name, array $tokens = []): string {
-    if (!isset(self::DEFAULT_MESSAGES[$name])) {
+    if (!isset($this->messagesMap[$name])) {
       throw new \InvalidArgumentException(sprintf('Message "%s" does not exist', $name));
     }
 
-    // @todo Implement support to retrieve messages from an external file.
-    $message = self::DEFAULT_MESSAGES[$name];
+    $message = $this->messagesMap[$name];
     $message = is_array($message) ? implode("\n", $message) : $message;
 
     $tokens += ['{{ cwd }}' => $this->cwd];
-    // Only support top-level composer.json entries for now.
-    $tokens += array_reduce(array_keys($this->packageData), fn($carry, $key) => is_string($this->packageData[$key]) ? $carry + [sprintf('{{ package.%s }}', $key) => $this->packageData[$key]] : $carry, []);
+    // Only support top-level composer.json entries as tokens for now.
+    $tokens += array_reduce(
+      array_keys($this->packageData),
+      fn($carry, $key): array => is_string($this->packageData[$key]) ? $carry + [sprintf('{{ package.%s }}', $key) => $this->packageData[$key]] : $carry,
+      []
+    );
 
     return strtr($message, $tokens);
   }
@@ -493,11 +431,27 @@ class CustomizeCommand extends BaseCommand {
   protected static function passthru(string $command): void {
     passthru($command, $status);
     if ($status != 0) {
-      // @codeCoverageIgnoreStart
       throw new \Exception('Command failed with exit code ' . $status);
-      // @codeCoverageIgnoreEnd
     }
   }
+
+  /**
+   * Print a message if the command is run in debug mode.
+   *
+   * @param string $message
+   *   Message.
+   * @param string $args
+   *   Arguments.
+   */
+  protected function debug(string $message, string ...$args): void {
+    if ($this->io->isDebug()) {
+      $this->io->comment(sprintf($message, ...$args));
+    }
+  }
+
+  // ============================================================================
+  // UTILITY METHODS
+  // ============================================================================
 
   /**
    * Read composer.json.
@@ -634,6 +588,76 @@ class CustomizeCommand extends BaseCommand {
         }
       }
     }
+  }
+
+  // ============================================================================
+  // CUSTOMIZABLE METHODS
+  // ============================================================================
+
+  /**
+   * Messages used by the command.
+   *
+   * Any messages defined in the `messages()` method of the configuration
+   * class will **recursively replace** the messages defined here. This means
+   * that only specific messages may be overridden by the configuration class.
+   *
+   * @param CustomizeCommand $command
+   *   The command instance.
+   *
+   * @return array<string,string|array<string>>
+   *   An associative array of messages with message name as key and the message
+   *   test as a string or an array of strings.
+   *
+   * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+   */
+  public static function messages(CustomizeCommand $command): array {
+    return [
+      'welcome' => 'Welcome to {{ package.name }} project customizer',
+      'banner' => [
+        'Please answer the following questions to customize your project.',
+        'You will be able to review your answers before proceeding.',
+        'Press Ctrl+C to exit.',
+      ],
+      'proceed' => 'Proceed?',
+      'result_no_changes' => 'No changes were made.',
+      'result_no_questions' => 'No questions were found. No changes were made.',
+      'result_customized' => 'Project was customized.',
+    ];
+  }
+
+  /**
+   * Question definitions.
+   *
+   * Provide questions in this method if you are using Customizer as a
+   * single-file drop-in for your scaffold project. Otherwise - place them into
+   * the configuration class.
+   *
+   * Any questions defined in the `questions()` method of the configuration
+   * class will **fully override** the questions defined here. This means that
+   * the configuration class must provide a full set of questions.
+   *
+   * See `.customizer.php` for an example of how to define questions.
+   *
+   * @return array<string,array<string,string|callable>>
+   *   An associative array of questions with question title as a key and the
+   *   value of array with the following keys:
+   *   - question: The question callback function used to ask the question.
+   *     The callback receives the following arguments:
+   *     - answers: An associative array of all answers received so far.
+   *     - command: The CustomizeCommand object.
+   *   - process: The callback function used to process the answer. Callback
+   *     can be an anonymous function or a method of this class as
+   *     process<PascalCasedQuestion>. The callback receives the following
+   *     arguments:
+   *     - title: The current question title.
+   *     - answer: The answer to the current question.
+   *     - answers: An associative array of all answers.
+   *     - command: The CustomizeCommand object.
+   *
+   * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+   */
+  public static function questions(CustomizeCommand $command): array {
+    return [];
   }
 
 }
