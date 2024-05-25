@@ -422,14 +422,14 @@ class CustomizeCommand extends BaseCommand {
   /**
    * Run a command.
    *
-   * @param string $command
+   * @param string $cmd
    *   Command to run.
    *
    * @throws \Exception
    *   If the command fails.
    */
-  protected static function passthru(string $command): void {
-    passthru($command, $status);
+  protected static function passthru(string $cmd): void {
+    passthru($cmd, $status);
     if ($status != 0) {
       throw new \Exception('Command failed with exit code ' . $status);
     }
@@ -601,7 +601,7 @@ class CustomizeCommand extends BaseCommand {
    * class will **recursively replace** the messages defined here. This means
    * that only specific messages may be overridden by the configuration class.
    *
-   * @param CustomizeCommand $command
+   * @param CustomizeCommand $customizer
    *   The command instance.
    *
    * @return array<string,string|array<string>>
@@ -610,7 +610,7 @@ class CustomizeCommand extends BaseCommand {
    *
    * @SuppressWarnings(PHPMD.UnusedFormalParameter)
    */
-  public static function messages(CustomizeCommand $command): array {
+  public static function messages(CustomizeCommand $customizer): array {
     return [
       'welcome' => 'Welcome to {{ package.name }} project customizer',
       'banner' => [
@@ -656,7 +656,7 @@ class CustomizeCommand extends BaseCommand {
    *
    * @SuppressWarnings(PHPMD.UnusedFormalParameter)
    */
-  public static function questions(CustomizeCommand $command): array {
+  public static function questions(CustomizeCommand $customizer): array {
     return [];
   }
 
