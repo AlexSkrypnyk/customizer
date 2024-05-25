@@ -60,8 +60,8 @@ class Dirs {
   /**
    * Initialize locations.
    */
-  public function initLocations(?callable $cb = NULL): void {
-    $this->root = $this->fileFindDir('composer.json', dirname(__FILE__) . '/../..');
+  public function initLocations(?callable $cb = NULL, string $root = NULL): void {
+    $this->root = $root ?: $this->fileFindDir('composer.json', dirname(__FILE__) . '/../..');
     $this->fixtures = $this->root . '/tests/phpunit/Fixtures';
 
     $this->build = rtrim(sys_get_temp_dir(), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'customizer-' . microtime(TRUE);
