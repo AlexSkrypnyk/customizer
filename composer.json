@@ -25,19 +25,13 @@
         "dealerdirect/phpcodesniffer-composer-installer": "^1.0",
         "drupal/coder": "^8.3",
         "ergebnis/composer-normalize": "^2.42",
-        "helmich/phpunit-json-assert": "dev-topic/54",
+        "helmich/phpunit-json-assert": "^3.5.2",
         "phpcompatibility/php-compatibility": "^9.3",
         "phpmd/phpmd": "^2.15",
         "phpstan/phpstan": "^1.10",
         "phpunit/phpunit": "^11.1",
         "rector/rector": "^1.0"
     },
-    "repositories": [
-        {
-            "type": "vcs",
-            "url": "https://github.com/dmitryuk/phpunit-json-assert"
-        }
-    ],
     "autoload": {
         "psr-4": {
             "AlexSkrypnyk\\Customizer\\": ""
