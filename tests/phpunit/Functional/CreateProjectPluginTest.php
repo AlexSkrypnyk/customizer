@@ -6,7 +6,6 @@ namespace AlexSkrypnyk\Customizer\Tests\Functional;
 
 use AlexSkrypnyk\Customizer\CustomizeCommand;
 use AlexSkrypnyk\Customizer\Plugin;
-use AlexSkrypnyk\Customizer\Tests\Dirs;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\RunInSeparateProcess;
@@ -18,34 +17,10 @@ use PHPUnit\Framework\Attributes\RunInSeparateProcess;
 #[CoversClass(CustomizeCommand::class)]
 class CreateProjectPluginTest extends CustomizerTestCase {
 
-  protected function setUp(): void {
-    parent::setUp();
-
-    $this->dirsInit(static function (Dirs $dirs): void {
-      $dirs->fs->copy($dirs->fixtures . '/plugin/composer.json', $dirs->repo . '/composer.json');
-      // Copy the configuration file.
-      $dirs->fs->copy($dirs->root . DIRECTORY_SEPARATOR . CustomizeCommand::CONFIG_FILE, $dirs->repo . DIRECTORY_SEPARATOR . CustomizeCommand::CONFIG_FILE);
-    });
-
-    // Projects using this project through a plugin need to have this
-    // repository added to their composer.json to be able to download it
-    // during the test.
-    $json = $this->composerJsonRead($this->dirs->repo . '/composer.json');
-    $json['repositories'] = [
-      [
-        'type' => 'path',
-        'url' => $this->dirs->root,
-        'options' => ['symlink' => TRUE],
-      ],
-    ];
-    $this->composerJsonWrite($this->dirs->repo . '/composer.json', $json);
-
-    // Save the package name for later use in tests.
-    $this->packageName = $json['name'];
-
-    // Change the current working directory to the 'system under test'.
-    chdir($this->dirs->sut);
-  }
+  /**
+   * {@inheritdoc}
+   */
+  protected static string $composerJsonFile = 'tests/phpunit/Fixtures/plugin/composer.json';
 
   #[RunInSeparateProcess]
   #[Group('install')]
@@ -75,7 +50,7 @@ class CreateProjectPluginTest extends CustomizerTestCase {
 
     $this->assertJsonHasNoKey($json, 'require-dev');
     $this->assertJsonHasNoKey($json, 'config.allow-plugins');
-    $this->assertFileDoesNotExist($this->commandFile);
+    $this->assertFileDoesNotExist($this->customizerFile);
 
     $this->assertComposerLockUpToDate();
   }
@@ -106,7 +81,7 @@ class CreateProjectPluginTest extends CustomizerTestCase {
     $this->assertArrayHasKey('alexskrypnyk/customizer', $json['require-dev']);
     $this->assertJsonHasKey($json, 'config.allow-plugins');
     $this->assertArrayHasKey('alexskrypnyk/customizer', $json['config']['allow-plugins']);
-    $this->assertFileDoesNotExist($this->commandFile);
+    $this->assertFileDoesNotExist($this->customizerFile);
 
     $this->assertComposerLockUpToDate();
   }

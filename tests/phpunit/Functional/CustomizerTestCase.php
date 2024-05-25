@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AlexSkrypnyk\Customizer\Tests\Functional;
 
 use AlexSkrypnyk\Customizer\CustomizeCommand;
+use AlexSkrypnyk\Customizer\Tests\Dirs;
 use AlexSkrypnyk\Customizer\Tests\Traits\CmdTrait;
 use AlexSkrypnyk\Customizer\Tests\Traits\ComposerTrait;
 use AlexSkrypnyk\Customizer\Tests\Traits\DirsTrait;
@@ -36,9 +37,14 @@ class CustomizerTestCase extends TestCase {
   protected string $packageName;
 
   /**
-   * The command file name.
+   * The Customizer file name.
    */
-  protected string $commandFile;
+  protected string $customizerFile;
+
+  /**
+   * The Composer JSON file name.
+   */
+  protected static string $composerJsonFile = 'composer.json';
 
   /**
    * {@inheritdoc}
@@ -46,11 +52,40 @@ class CustomizerTestCase extends TestCase {
   protected function setUp(): void {
     parent::setUp();
 
+    if (!isset(static::$composerJsonFile)) {
+      throw new \RuntimeException('The $composerJsonFile property must be set in the child class.');
+    }
+
     $reflector = new \ReflectionClass(CustomizeCommand::class);
-    $this->commandFile = basename((string) $reflector->getFileName());
+    $this->customizerFile = basename((string) $reflector->getFileName());
 
     // Initialize the Composer command tester.
     $this->composerCommandInit();
+
+    $this->dirsInit(static function (Dirs $dirs): void {
+      $dirs->fs->copy($dirs->root . DIRECTORY_SEPARATOR . static::$composerJsonFile, $dirs->repo . '/composer.json');
+      // Copy the configuration file.
+      $dirs->fs->copy($dirs->root . DIRECTORY_SEPARATOR . CustomizeCommand::CONFIG_FILE, $dirs->repo . DIRECTORY_SEPARATOR . CustomizeCommand::CONFIG_FILE);
+    });
+
+    // Projects using this project through a plugin need to have this
+    // repository added to their composer.json to be able to download it
+    // during the test.
+    $json = $this->composerJsonRead($this->dirs->repo . '/composer.json');
+    $json['repositories'] = [
+      [
+        'type' => 'path',
+        'url' => $this->dirs->root,
+        'options' => ['symlink' => TRUE],
+      ],
+    ];
+    $this->composerJsonWrite($this->dirs->repo . '/composer.json', $json);
+
+    // Save the package name for later use in tests.
+    $this->packageName = $json['name'];
+
+    // Change the current working directory to the 'system under test'.
+    chdir($this->dirs->sut);
   }
 
   /**
