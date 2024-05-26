@@ -135,7 +135,7 @@ and see the Customizer in action:
 composer create-project alexskrypnyk/template-project-example my-project
 ```
 
-The demonstration questions provided in the [`.customizer.php`](https://github.com/AlexSkrypnyk/template-project-example/.customizer.php)
+The demonstration questions provided in the [`.customizer.php`](https://github.com/AlexSkrypnyk/template-project-example/blob/main/.customizer.php)
 file will ask you to provide a package name, description, and license.
 The answers are then processed by updating the `composer.json` file and
 replacing the package name in the project files.
@@ -344,7 +344,7 @@ answers correctly.
 You can setup PHPUnit in your template project to run these tests. Once done,
 use [`CustomizerTestCase.php`](tests/phpunit/Functional/CustomizerTestCase.php)
 as a base class for your tests. See this example within the
-[template project example](https://github.com/AlexSkrypnyk/template-project-example/tests/phpunit/Functional/CustomizerTest.php).
+[template project example](https://github.com/AlexSkrypnyk/template-project-example/blob/main/tests/CreateProjectTest.php).
 
 ## Maintenance
 
