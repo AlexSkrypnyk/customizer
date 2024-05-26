@@ -59,6 +59,42 @@ class CreateProjectPluginTest extends CustomizerTestCase {
   #[RunInSeparateProcess]
   #[Group('install')]
   #[Group('plugin')]
+  public function testPluginInstallAdditionalCleanup(): void {
+    $this->dirs->fs->copy($this->dirs->fixtures . DIRECTORY_SEPARATOR . 'plugin' . DIRECTORY_SEPARATOR . CustomizeCommand::CONFIG_FILE, $this->dirs->repo . DIRECTORY_SEPARATOR . CustomizeCommand::CONFIG_FILE, TRUE);
+
+    $this->customizerSetAnswers([
+      'testorg/testpackage',
+      'Test description',
+      'MIT',
+      self::TUI_ANSWER_NOTHING,
+    ]);
+    $this->composerCreateProject();
+
+    $this->assertComposerCommandSuccessOutputContains('Welcome to the yourorg/yourtempaltepackage project customizer');
+    $this->assertComposerCommandSuccessOutputContains('Project was customized');
+
+    $this->assertFileExists('composer.json');
+    $this->assertFileExists('composer.lock');
+    $this->assertDirectoryExists('vendor');
+    // Plugin will only clean up after itself if there were questions.
+    $this->assertDirectoryDoesNotExist('vendor/alexskrypnyk/customizer');
+
+    $json = $this->composerJsonRead('composer.json');
+    $this->assertEquals('testorg/testpackage', $json['name']);
+    $this->assertEquals('Test description', $json['description']);
+    $this->assertEquals('MIT', $json['license']);
+
+    $this->assertArrayNotHasKey('require-dev', $json);
+    $this->assertArrayNotHasKey('AlexSkrypnyk\\Customizer\\Tests\\', $json['autoload-dev']['psr-4']);
+    $this->assertArrayNotHasKey('config', $json);
+    $this->assertFileDoesNotExist($this->customizerFile);
+
+    $this->assertComposerLockUpToDate();
+  }
+
+  #[RunInSeparateProcess]
+  #[Group('install')]
+  #[Group('plugin')]
   public function testPluginInstallNoConfigFile(): void {
     $this->dirs->fs->remove($this->dirs->repo . DIRECTORY_SEPARATOR . CustomizeCommand::CONFIG_FILE);
 

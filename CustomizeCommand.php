@@ -98,6 +98,13 @@ class CustomizeCommand extends BaseCommand {
   protected array $messagesMap;
 
   /**
+   * Additional cleanup callback.
+   *
+   * @var callable|null
+   */
+  protected mixed $cleanupCallback;
+
+  /**
    * {@inheritdoc}
    */
   protected function configure(): void {
@@ -227,6 +234,10 @@ class CustomizeCommand extends BaseCommand {
     static::arrayUnsetDeep($json, ['require-dev', 'alexskrypnyk/customizer']);
     static::arrayUnsetDeep($json, ['autoload-dev', 'psr-4', 'AlexSkrypnyk\\Customizer\\Tests\\']);
 
+    if (!empty($this->cleanupCallback)) {
+      call_user_func_array($this->cleanupCallback, [&$json, $this]);
+    }
+
     // If the package data has changed, update the composer.json file.
     if (strcmp(serialize($this->packageData), serialize($json)) !== 0) {
       $this->writeComposerJson($json);
@@ -311,6 +322,11 @@ class CustomizeCommand extends BaseCommand {
       }
       if (method_exists($config_class, 'questions')) {
         $questions = $config_class::questions($this);
+      }
+      if (method_exists($config_class, 'cleanup')) {
+        $this->cleanupCallback = function (array &$composerjson) use ($config_class) {
+          return $config_class::cleanup($composerjson, $this);
+        };
       }
     }
 
