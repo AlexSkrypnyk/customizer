@@ -9,8 +9,6 @@ use AlexSkrypnyk\Customizer\Tests\Dirs;
 use AlexSkrypnyk\Customizer\Tests\Traits\CmdTrait;
 use AlexSkrypnyk\Customizer\Tests\Traits\ComposerTrait;
 use AlexSkrypnyk\Customizer\Tests\Traits\DirsTrait;
-use AlexSkrypnyk\Customizer\Tests\Traits\JsonAssertTrait;
-use Helmich\JsonAssert\JsonAssertions;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\TestStatus\Error;
 use PHPUnit\Framework\TestStatus\Failure;
@@ -22,8 +20,6 @@ class CustomizerTestCase extends TestCase {
 
   use ComposerTrait;
   use DirsTrait;
-  use JsonAssertions;
-  use JsonAssertTrait;
   use CmdTrait;
 
   /**

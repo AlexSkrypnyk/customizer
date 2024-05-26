@@ -44,12 +44,12 @@ class CreateProjectPluginTest extends CustomizerTestCase {
     $this->assertDirectoryDoesNotExist('vendor/alexskrypnyk/customizer');
 
     $json = $this->composerJsonRead('composer.json');
-    $this->assertJsonValueEquals($json, 'name', 'testorg/testpackage');
-    $this->assertJsonValueEquals($json, 'description', 'Test description');
-    $this->assertJsonValueEquals($json, 'license', 'MIT');
+    $this->assertEquals('testorg/testpackage', $json['name']);
+    $this->assertEquals('Test description', $json['description']);
+    $this->assertEquals('MIT', $json['license']);
 
-    $this->assertJsonHasNoKey($json, 'require-dev');
-    $this->assertJsonHasNoKey($json, 'config.allow-plugins');
+    $this->assertArrayNotHasKey('require-dev', $json);
+    $this->assertArrayNotHasKey('allow-plugins', $json['config']);
     $this->assertFileDoesNotExist($this->customizerFile);
 
     $this->assertComposerLockUpToDate();
@@ -73,13 +73,11 @@ class CreateProjectPluginTest extends CustomizerTestCase {
     $this->assertDirectoryExists('vendor/alexskrypnyk/customizer');
 
     $json = $this->composerJsonRead('composer.json');
-    $this->assertJsonValueEquals($json, 'name', 'yourorg/yourtempaltepackage');
-    $this->assertJsonValueEquals($json, 'description', 'Your template package description');
-    $this->assertJsonValueEquals($json, 'license', 'proprietary');
+    $this->assertEquals('yourorg/yourtempaltepackage', $json['name']);
+    $this->assertEquals('Your template package description', $json['description']);
+    $this->assertEquals('proprietary', $json['license']);
 
-    $this->assertJsonHasKey($json, 'require-dev');
     $this->assertArrayHasKey('alexskrypnyk/customizer', $json['require-dev']);
-    $this->assertJsonHasKey($json, 'config.allow-plugins');
     $this->assertArrayHasKey('alexskrypnyk/customizer', $json['config']['allow-plugins']);
     $this->assertFileDoesNotExist($this->customizerFile);
 

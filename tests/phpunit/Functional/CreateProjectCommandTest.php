@@ -76,13 +76,13 @@ class CreateProjectCommandTest extends CustomizerTestCase {
     $this->assertDirectoryDoesNotExist('vendor');
 
     $json = $this->composerJsonRead('composer.json');
-    $this->assertJsonValueEquals($json, 'name', 'testorg/testpackage');
-    $this->assertJsonValueEquals($json, 'description', 'Test description');
-    $this->assertJsonValueEquals($json, 'license', 'MIT');
-    $this->assertJsonHasNoKey($json, 'scripts');
+    $this->assertEquals('testorg/testpackage', $json['name']);
+    $this->assertEquals('Test description', $json['description']);
+    $this->assertEquals('MIT', $json['license']);
+    $this->assertArrayNotHasKey('scripts', $json);
 
-    $this->assertJsonHasNoKey($json, 'autoload');
-    $this->assertJsonHasNoKey($json, 'scripts');
+    $this->assertArrayNotHasKey('autoload', $json);
+    $this->assertArrayNotHasKey('scripts', $json);
     $this->assertFileDoesNotExist($this->customizerFile);
   }
 
@@ -114,12 +114,12 @@ class CreateProjectCommandTest extends CustomizerTestCase {
     $this->assertDirectoryDoesNotExist('vendor');
 
     $json = $this->composerJsonRead('composer.json');
-    $this->assertJsonValueEquals($json, 'name', 'testorg/testpackage');
-    $this->assertJsonValueEquals($json, 'description', 'Test description');
-    $this->assertJsonValueEquals($json, 'license', 'MIT');
+    $this->assertEquals('testorg/testpackage', $json['name']);
+    $this->assertEquals('Test description', $json['description']);
+    $this->assertEquals('MIT', $json['license']);
 
-    $this->assertJsonHasNoKey($json, 'autoload');
-    $this->assertJsonHasNoKey($json, 'scripts');
+    $this->assertArrayNotHasKey('autoload', $json);
+    $this->assertArrayNotHasKey('scripts', $json);
     $this->assertFileDoesNotExist($this->customizerFile);
   }
 
@@ -142,12 +142,12 @@ class CreateProjectCommandTest extends CustomizerTestCase {
     $this->assertDirectoryDoesNotExist('vendor');
 
     $json = $this->composerJsonRead('composer.json');
-    $this->assertJsonValueEquals($json, 'name', 'yourorg/yourtempaltepackage');
-    $this->assertJsonValueEquals($json, 'description', 'Your template package description');
-    $this->assertJsonHasNoKey($json, 'license');
+    $this->assertEquals('yourorg/yourtempaltepackage', $json['name']);
+    $this->assertEquals('Your template package description', $json['description']);
+    $this->assertArrayNotHasKey('license', $json);
 
-    $this->assertJsonHasKey($json, 'autoload');
-    $this->assertJsonHasKey($json, 'scripts');
+    $this->assertArrayHasKey('autoload', $json);
+    $this->assertArrayHasKey('scripts', $json);
     $this->assertFileExists($this->customizerFile);
   }
 
@@ -171,12 +171,12 @@ class CreateProjectCommandTest extends CustomizerTestCase {
     $this->assertDirectoryDoesNotExist('vendor');
 
     $json = $this->composerJsonRead('composer.json');
-    $this->assertJsonValueEquals($json, 'name', 'yourorg/yourtempaltepackage');
-    $this->assertJsonValueEquals($json, 'description', 'Your template package description');
-    $this->assertJsonHasNoKey($json, 'license');
+    $this->assertEquals('yourorg/yourtempaltepackage', $json['name']);
+    $this->assertEquals('Your template package description', $json['description']);
+    $this->assertArrayNotHasKey('license', $json);
 
-    $this->assertJsonHasKey($json, 'autoload');
-    $this->assertJsonHasKey($json, 'scripts');
+    $this->assertArrayHasKey('autoload', $json);
+    $this->assertArrayHasKey('scripts', $json);
     $this->assertFileExists($this->customizerFile);
   }
 
@@ -201,12 +201,12 @@ class CreateProjectCommandTest extends CustomizerTestCase {
     $this->assertDirectoryExists('vendor/monolog/monolog');
 
     $json = $this->composerJsonRead('composer.json');
-    $this->assertJsonValueEquals($json, 'name', 'testorg/testpackage');
-    $this->assertJsonValueEquals($json, 'description', 'Test description');
-    $this->assertJsonValueEquals($json, 'license', 'MIT');
+    $this->assertEquals('testorg/testpackage', $json['name']);
+    $this->assertEquals('Test description', $json['description']);
+    $this->assertEquals('MIT', $json['license']);
 
-    $this->assertJsonHasNoKey($json, 'autoload');
-    $this->assertJsonHasNoKey($json, 'scripts');
+    $this->assertArrayNotHasKey('autoload', $json);
+    $this->assertArrayNotHasKey('scripts', $json);
     $this->assertFileDoesNotExist($this->customizerFile);
 
     $this->assertComposerLockUpToDate();
@@ -232,12 +232,12 @@ class CreateProjectCommandTest extends CustomizerTestCase {
     $this->assertDirectoryExists('vendor/monolog/monolog');
 
     $json = $this->composerJsonRead('composer.json');
-    $this->assertJsonValueEquals($json, 'name', 'yourorg/yourtempaltepackage');
-    $this->assertJsonValueEquals($json, 'description', 'Your template package description');
-    $this->assertJsonHasNoKey($json, 'license');
+    $this->assertEquals('yourorg/yourtempaltepackage', $json['name']);
+    $this->assertEquals('Your template package description', $json['description']);
+    $this->assertArrayNotHasKey('license', $json);
 
-    $this->assertJsonHasKey($json, 'autoload');
-    $this->assertJsonHasKey($json, 'scripts');
+    $this->assertArrayHasKey('autoload', $json);
+    $this->assertArrayHasKey('scripts', $json);
     $this->assertFileExists($this->customizerFile);
   }
 
