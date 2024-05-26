@@ -23,6 +23,15 @@ The Customizer allows template project authors to ask users questions during
 the `composer create-project` command and then update the code base based on
 their answers.
 
+## TL;DR
+
+Run the command below to create a new project from the [template project example](https://github.com/AlexSkrypnyk/template-project-example)
+and see the Customizer in action:
+
+```bash
+composer create-project alexskrypnyk/template-project-example my-project
+```
+
 ## Features
 
 - Can be included as a dependency
