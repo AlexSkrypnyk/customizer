@@ -33,7 +33,10 @@ trait ComposerTrait {
   protected function assertComposerCommandSuccessOutputContains(string|array $strings): void {
     $strings = is_array($strings) ? $strings : [$strings];
 
-    $this->assertSame(0, $this->tester->getStatusCode());
+    if ($this->tester->getStatusCode() !== 0) {
+      $this->fail($this->tester->getDisplay());
+    }
+    $this->assertSame(0, $this->tester->getStatusCode(), sprintf("The Composer command should have completed successfully:\n%s", $this->tester->getInput()->__toString()));
 
     $output = $this->tester->getDisplay(TRUE);
     foreach ($strings as $string) {

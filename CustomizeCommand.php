@@ -227,12 +227,23 @@ class CustomizeCommand extends BaseCommand {
   protected function cleanup(): void {
     $json = $this->readComposerJson();
 
+    $is_dependency = (
+      !empty($json['require'])
+      && is_array($json['require'])
+      && isset($json['require']['alexskrypnyk/customizer'])
+    ) || (
+      !empty($json['require-dev'])
+      && is_array($json['require-dev'])
+      && isset($json['require-dev']['alexskrypnyk/customizer'])
+    );
+
     static::arrayUnsetDeep($json, ['autoload', 'classmap'], basename(__FILE__), FALSE);
     static::arrayUnsetDeep($json, ['scripts', 'customize']);
     static::arrayUnsetDeep($json, ['scripts', 'post-create-project-cmd'], '@customize');
 
     static::arrayUnsetDeep($json, ['require-dev', 'alexskrypnyk/customizer']);
     static::arrayUnsetDeep($json, ['autoload-dev', 'psr-4', 'AlexSkrypnyk\\Customizer\\Tests\\']);
+    static::arrayUnsetDeep($json, ['config', 'allow-plugins', 'alexskrypnyk/customizer']);
 
     if (!empty($this->cleanupCallback)) {
       call_user_func_array($this->cleanupCallback, [&$json, $this]);
@@ -242,17 +253,16 @@ class CustomizeCommand extends BaseCommand {
     if (strcmp(serialize($this->packageData), serialize($json)) !== 0) {
       $this->writeComposerJson($json);
 
-      if ($this->isComposerDependenciesInstalled) {
+      // We can only update the composer.lock file if the Customizer was not run
+      // after the Composer dependencies were installed and the Customizer
+      // was not installed as a dependency because the files will be removed
+      // and this process will no longer have required dependencies.
+      // For a Customizer installed as a dependency, the user should run
+      // `composer update` manually (or through a plugin) after the Customizer
+      // is finished.
+      if ($this->isComposerDependenciesInstalled && !$is_dependency) {
         $this->io->writeLn('Updating composer.lock file after customization.');
         static::passthru('composer update --quiet --no-interaction --no-progress');
-        // Composer checks for plugins within installed packages, even if the
-        // packages are no longer is `composer.json`. So we need to remove the
-        // plugin from the `composer.json` and update the dependencies again.
-        if (isset($json['config']['allow-plugins']['alexskrypnyk/customizer'])) {
-          static::arrayUnsetDeep($json, ['config', 'allow-plugins', 'alexskrypnyk/customizer']);
-          $this->writeComposerJson($json);
-          passthru('composer update --quiet --no-interaction --no-progress');
-        }
       }
     }
 
