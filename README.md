@@ -240,6 +240,30 @@ class CustomizerConfig {
 }
 ```
 
+### `cleanup()`
+
+Using the `cleanup()` method, the template project authors can additionally
+process the `composer.json` file content before all dependencies are updated and
+process files. This runs after all answers are received and the user confirms
+the intended changes.
+
+```php
+/**
+ * A callback to process cleanup.
+ *
+ * @param array<string,mixed> $composerjson
+ *   The composer.json file content passed by reference.
+ * @param \AlexSkrypnyk\Customizer\CustomizeCommand $customizer
+ *   The Customizer instance.
+ */
+public static function cleanup(array &$composerjson, CustomizeCommand $customizer): void {
+  // Here you can remove any sections from the composer.json file that are not
+  // needed for the project before all dependencies are updated.
+  //
+  // You can also additionally process files.
+}
+```
+
 ### `messages()`
 
 Using the `messages()` method, the template project authors can overwrite
