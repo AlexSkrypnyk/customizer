@@ -181,7 +181,7 @@ class CustomizerConfig {
    * A callback to process cleanup.
    */
   public static function cleanup(array &$composerjson, CustomizeCommand $customizer): void {
-    unset($composerjson['config']['sort-packages']);
+    $customizer::arrayUnsetDeep($composerjson, ['config', 'sort-packages']);
   }
 
 }

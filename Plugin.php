@@ -73,6 +73,9 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
       $scripts = $event->getComposer()->getPackage()->getScripts();
       $scripts['customize'][] = CustomizeCommand::class;
       $scripts['post-create-project-cmd'][] = '@customize';
+      // Since we are removing the plugin, we need to run `composer update`,
+      // but in a separate process to avoid a dependency deadlock.
+      $scripts['post-create-project-cmd'][] = '@composer update --quiet --no-interaction --no-progress --no-plugins';
       $package->setScripts($scripts);
     }
   }
