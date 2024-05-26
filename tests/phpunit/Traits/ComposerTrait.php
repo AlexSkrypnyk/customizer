@@ -28,6 +28,26 @@ trait ComposerTrait {
     }
 
     $this->tester = new ApplicationTester($application);
+
+    // Composer autoload uses per-project Composer binary, if the
+    // `composer/composer` is included in the project as a dependency.
+    //
+    // When the test runs and creates SUT, the Composer binary used is
+    // from the SUT's `vendor` directory. The Customizer may remove the
+    // `vendor/composer/composer` directory as a part of the cleanup, resulting
+    // in the Composer autoloader having an empty path to the Composer binary.
+    //
+    // This is extremely difficult to debug, because there is no clear error
+    // message apart from `Could not open input file`.
+    //
+    // To prevent this, we set the `COMPOSER_BINARY` environment variable to the
+    // Composer binary path found in the system.
+    // @see \Composer\EventDispatcher::doDispatch().
+    $composer_bin = shell_exec(escapeshellcmd('which composer'));
+    if ($composer_bin === FALSE) {
+      throw new \RuntimeException('Composer binary not found');
+    }
+    putenv('COMPOSER_BINARY=' . trim((string) $composer_bin));
   }
 
   protected function assertComposerCommandSuccessOutputContains(string|array $strings): void {
