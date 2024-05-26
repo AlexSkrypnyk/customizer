@@ -9,6 +9,12 @@
     "require-dev": {
         "alexskrypnyk/customizer": "@dev"
     },
+    "autoload-dev": {
+        "psr-4": {
+            "AlexSkrypnyk\\Customizer\\Tests\\": "vendor/alexskrypnyk/customizer/tests/phpunit",
+            "AlexSkrypnyk\\TemplateProjectExample\\Tests\\": "tests"
+        }
+    },
     "minimum-stability": "dev",
     "config": {
         "allow-plugins": {

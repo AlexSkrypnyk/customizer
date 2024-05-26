@@ -225,6 +225,7 @@ class CustomizeCommand extends BaseCommand {
     static::arrayUnsetDeep($json, ['scripts', 'post-create-project-cmd'], '@customize');
 
     static::arrayUnsetDeep($json, ['require-dev', 'alexskrypnyk/customizer']);
+    static::arrayUnsetDeep($json, ['autoload-dev', 'psr-4', 'AlexSkrypnyk\\Customizer\\Tests\\']);
 
     // If the package data has changed, update the composer.json file.
     if (strcmp(serialize($this->packageData), serialize($json)) !== 0) {

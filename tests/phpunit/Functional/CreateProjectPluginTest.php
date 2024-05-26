@@ -49,6 +49,7 @@ class CreateProjectPluginTest extends CustomizerTestCase {
     $this->assertEquals('MIT', $json['license']);
 
     $this->assertArrayNotHasKey('require-dev', $json);
+    $this->assertArrayNotHasKey('AlexSkrypnyk\\Customizer\\Tests\\', $json['autoload-dev']['psr-4']);
     $this->assertArrayNotHasKey('allow-plugins', $json['config']);
     $this->assertFileDoesNotExist($this->customizerFile);
 
@@ -69,6 +70,7 @@ class CreateProjectPluginTest extends CustomizerTestCase {
     $this->assertFileExists('composer.json');
     $this->assertFileExists('composer.lock');
     $this->assertDirectoryExists('vendor');
+
     // Plugin will only clean up after itself if there were questions.
     $this->assertDirectoryExists('vendor/alexskrypnyk/customizer');
 
@@ -78,6 +80,7 @@ class CreateProjectPluginTest extends CustomizerTestCase {
     $this->assertEquals('proprietary', $json['license']);
 
     $this->assertArrayHasKey('alexskrypnyk/customizer', $json['require-dev']);
+    $this->assertArrayHasKey('AlexSkrypnyk\\Customizer\\Tests\\', $json['autoload-dev']['psr-4']);
     $this->assertArrayHasKey('alexskrypnyk/customizer', $json['config']['allow-plugins']);
     $this->assertFileDoesNotExist($this->customizerFile);
 
