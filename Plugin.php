@@ -75,8 +75,20 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
       $scripts['post-create-project-cmd'][] = '@customize';
       // Since we are removing the plugin, we need to run `composer update`,
       // but in a separate process to avoid a dependency deadlock.
-      $scripts['post-create-project-cmd'][] = '@composer update --quiet --no-interaction --no-progress --no-plugins';
+      $scripts['post-create-project-cmd'][] = static::class . '::update';
       $package->setScripts($scripts);
+    }
+  }
+
+  /**
+   * Update the project after the plugin is removed.
+   */
+  public static function update(): void {
+    if (file_exists('composer.lock')) {
+      exec('composer update --quiet --no-interaction --no-progress --no-plugins', $output, $status);
+      if ($status != 0) {
+        throw new \Exception('Command failed with exit code ' . $status . ': ' . implode("\n", $output));
+      }
     }
   }
 
