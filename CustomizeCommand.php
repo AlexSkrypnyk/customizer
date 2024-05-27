@@ -250,7 +250,7 @@ class CustomizeCommand extends BaseCommand {
     }
 
     // If the package data has changed, update the composer.json file.
-    if (strcmp(serialize($this->packageData), serialize($json)) !== 0) {
+    if (!empty($json) && strcmp(serialize($this->packageData), serialize($json)) !== 0) {
       $this->writeComposerJson($json);
 
       // We can only update the composer.lock file if the Customizer was not run
