@@ -542,6 +542,7 @@ class CustomizeCommand extends BaseCommand {
     $finder = Finder::create()
       ->ignoreVCS(TRUE)
       ->ignoreDotFiles(FALSE)
+      ->exclude(['vendor'])
       ->files()
       ->contains($search)
       ->in($dir);
