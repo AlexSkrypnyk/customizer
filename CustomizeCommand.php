@@ -394,7 +394,7 @@ class CustomizeCommand extends BaseCommand {
     $class_name = NULL;
 
     $this->debug('Looking for config class in file "%s" within directory "%s".', $file_name, $cwd);
-    $files = (new Finder())->in($cwd)->ignoreDotFiles(FALSE)->name($file_name)->files();
+    $files = (new Finder())->in($cwd)->exclude('vendor')->ignoreDotFiles(FALSE)->followLinks()->name($file_name)->files();
 
     foreach ($files as $file) {
       $classes_before = get_declared_classes();
