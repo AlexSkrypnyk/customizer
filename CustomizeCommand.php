@@ -48,7 +48,7 @@ class CustomizeCommand extends BaseCommand {
   /**
    * Defines the file name for an optional external configuration file.
    */
-  const CONFIG_FILE = '.customizer.php';
+  const CONFIG_FILE = 'customize.php';
 
   /**
    * IO.
@@ -710,7 +710,7 @@ class CustomizeCommand extends BaseCommand {
    * class will **fully override** the questions defined here. This means that
    * the configuration class must provide a full set of questions.
    *
-   * See `.customizer.php` for an example of how to define questions.
+   * See `customize.php` for an example of how to define questions.
    *
    * @return array<string,array<string,string|callable>>
    *   An associative array of questions with question title as a key and the

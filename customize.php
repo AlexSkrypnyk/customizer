@@ -7,14 +7,18 @@ use AlexSkrypnyk\Customizer\CustomizeCommand;
 /**
  * Customizer configuration.
  *
+ * Example configuration for the Customizer command.
+ *
+ * phpcs:disable Drupal.Classes.ClassFileName.NoMatch
+ *
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
-class CustomizerConfig {
+class Customize {
 
   /**
    * Messages used by the command.
    *
-   * @param CustomizeCommand $c
+   * @param \AlexSkrypnyk\Customizer\CustomizeCommand $c
    *   The Customizer instance.
    *
    * @return array<string,string|array<string>>
@@ -70,7 +74,7 @@ class CustomizerConfig {
    * ];
    * @endcode
    *
-   * @param CustomizeCommand $c
+   * @param \AlexSkrypnyk\Customizer\CustomizeCommand $c
    *   The CustomizeCommand object. Can be used to access the command properties
    *   and methods to prepare questions. Note that the questions callbacks
    *   already receive the command object as an argument, so this argument is
@@ -167,7 +171,7 @@ class CustomizerConfig {
    *   The answer to the question.
    * @param array<string,string> $answers
    *   All answers received so far.
-   * @param CustomizeCommand $c
+   * @param \AlexSkrypnyk\Customizer\CustomizeCommand $c
    *   The Customizer instance.
    *
    * @SuppressWarnings(PHPMD.UnusedFormalParameter)
