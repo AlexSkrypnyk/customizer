@@ -14,11 +14,11 @@ use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\TestStatus\Failure;
 
 /**
- * Test the scaffold create-project command with no-install.
+ * Test for helpers used in operations on files.
  */
 #[CoversClass(CustomizeCommand::class)]
 #[Group('unit')]
-class ReplaceInPathTest extends TestCase {
+class FilesTest extends TestCase {
 
   use DirsTrait;
   use ReflectionTrait;
@@ -372,6 +372,60 @@ class ReplaceInPathTest extends TestCase {
         ],
       ],
     ];
+  }
+
+  #[DataProvider('dataProviderReadComposerJson')]
+  public function testReadComposerJson(string $before, string $after, ?string $exception_message = NULL): void {
+    if (!empty($before)) {
+      $this->createFileTree($this->dirs->sut, ['composer.json' => $before]);
+    }
+
+    if ($exception_message) {
+      $this->expectExceptionMessage(\RuntimeException::class);
+      $this->expectExceptionMessage($exception_message);
+    }
+
+    CustomizeCommand::readComposerJson($this->dirs->sut . '/composer.json');
+
+    if (!$exception_message) {
+      $this->assertFileTree($this->dirs->sut, ['composer.json' => $after]);
+    }
+  }
+
+  /**
+   * Data provider for testUncommentLine.
+   *
+   * @return array
+   *   The data.
+   */
+  public static function dataProviderReadComposerJson(): array {
+    return [
+      [
+        '{}',
+        '{}',
+      ],
+      [
+        '',
+        '',
+        'Failed to read composer.json',
+      ],
+      [
+        '{',
+        '{',
+        'Failed to decode composer.json',
+      ],
+    ];
+  }
+
+  public function testWriteComposerJson(): void {
+    CustomizeCommand::writeComposerJson($this->dirs->sut . '/composer.json', [1, 2, 3]);
+    $this->assertFileTree($this->dirs->sut, [
+      'composer.json' => "[
+    1,
+    2,
+    3
+]",
+    ]);
   }
 
   /**
