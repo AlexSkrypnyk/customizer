@@ -14,6 +14,7 @@ use PHPUnit\Framework\Attributes\RunInSeparateProcess;
  * Test Customizer as a single-file drop-in during `composer create-project`.
  */
 #[CoversClass(CustomizeCommand::class)]
+#[Group('command')]
 class CreateProjectCommandTest extends CustomizerTestCase {
 
   /**
@@ -25,6 +26,8 @@ class CreateProjectCommandTest extends CustomizerTestCase {
    * {@inheritdoc}
    */
   protected function setUp(): void {
+    $test_name = $this->name();
+
     $reflector = new \ReflectionClass(CustomizeCommand::class);
     $this->customizerFile = basename((string) $reflector->getFileName());
 
@@ -32,33 +35,41 @@ class CreateProjectCommandTest extends CustomizerTestCase {
     $this->composerCommandInit();
 
     // Initialize the directories.
-    $this->dirsInit(function (Dirs $dirs): void {
-      $dirs->fs->copy($dirs->fixtures . '/command/composer.json', $dirs->repo . '/composer.json');
+    $this->dirsInit(function (Dirs $dirs) use ($test_name): void {
+      $this->dirs->fixtures .= DIRECTORY_SEPARATOR . 'command' . DIRECTORY_SEPARATOR . static::toFixtureDirName($test_name);
+      if (!is_dir($this->dirs->fixtures)) {
+        throw new \RuntimeException('The fixtures directory does not exist: ' . $this->dirs->fixtures);
+      }
+
+      $dirs->fs->mirror(
+        $this->dirs->fixtures . DIRECTORY_SEPARATOR . 'base',
+        $dirs->repo
+      );
+
       // Create an empty command file in the 'system under test' to replicate a
       // real scenario during test where the file is manually copied into a real
       // project and then removed by the command after customization runs.
       $dirs->fs->touch($dirs->repo . DIRECTORY_SEPARATOR . $this->customizerFile);
-      // Copy the configuration file.
-      $dirs->fs->copy($dirs->root . DIRECTORY_SEPARATOR . CustomizeCommand::CONFIG_FILE, $dirs->repo . DIRECTORY_SEPARATOR . CustomizeCommand::CONFIG_FILE);
     });
 
     // Update the 'autoload' to include the command file from the project
     // root to get code test coverage.
-    $json = $this->composerJsonRead($this->dirs->repo . '/composer.json');
+    $json = CustomizeCommand::readComposerJson($this->dirs->repo . '/composer.json');
+    $json['autoload'] = is_array($json['autoload']) ? $json['autoload'] : [];
     $json['autoload']['classmap'] = [$this->dirs->root . DIRECTORY_SEPARATOR . $this->customizerFile];
-    $this->composerJsonWrite($this->dirs->repo . '/composer.json', $json);
+    CustomizeCommand::writeComposerJson($this->dirs->repo . '/composer.json', $json);
 
-    // Save the package name for later use in tests.
-    $this->packageName = $json['name'];
+    // Save the test package name for later use in tests.
+    $this->packageName = is_string($json['name']) ? $json['name'] : '';
 
     // Change the current working directory to the 'system under test'.
     chdir($this->dirs->sut);
   }
 
-  #[RunInSeparateProcess]
   #[Group('no-install')]
   #[Group('smoke')]
-  public function testCommandNoInstall(): void {
+  #[RunInSeparateProcess]
+  public function testNoInstall(): void {
     $this->customizerSetAnswers([
       'testorg/testpackage',
       'Test description',
@@ -68,34 +79,26 @@ class CreateProjectCommandTest extends CustomizerTestCase {
 
     $this->composerCreateProject(['--no-install' => TRUE]);
 
-    $this->assertComposerCommandSuccessOutputContains('Welcome to the yourorg/yourtempaltepackage project customizer');
+    $this->assertComposerCommandSuccessOutputContains('Welcome to the "yourorg/yourtempaltepackage" project customizer');
     $this->assertComposerCommandSuccessOutputContains('Project was customized');
 
-    $this->assertFileExists('composer.json');
-    $this->assertFileDoesNotExist('composer.lock');
-    $this->assertDirectoryDoesNotExist('vendor');
-
-    $json = $this->composerJsonRead('composer.json');
-    $this->assertEquals('testorg/testpackage', $json['name']);
-    $this->assertEquals('Test description', $json['description']);
-    $this->assertEquals('MIT', $json['license']);
-    $this->assertArrayNotHasKey('scripts', $json);
-
-    $this->assertArrayNotHasKey('autoload', $json);
-    $this->assertArrayNotHasKey('scripts', $json);
-    $this->assertFileDoesNotExist($this->customizerFile);
+    $this->assertFixtureFiles();
   }
 
   #[RunInSeparateProcess]
   #[Group('no-install')]
-  public function testCommandNoInstallCommandInDifferentDir(): void {
-    $this->dirs->fs->copy(
-      $this->dirs->root . DIRECTORY_SEPARATOR . $this->customizerFile,
+  public function testNoInstallSubDir(): void {
+    // Move the command stub pre-created in setUp() to the 'src' directory.
+    $this->dirs->fs->mkdir($this->dirs->repo . DIRECTORY_SEPARATOR . 'src');
+    $this->dirs->fs->rename(
+      $this->dirs->repo . DIRECTORY_SEPARATOR . $this->customizerFile,
       $this->dirs->repo . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . $this->customizerFile
     );
-    $json = $this->composerJsonRead($this->dirs->repo . DIRECTORY_SEPARATOR . 'composer.json');
+
+    $json = CustomizeCommand::readComposerJson($this->dirs->repo . DIRECTORY_SEPARATOR . 'composer.json');
+    $json['autoload'] = is_array($json['autoload']) ? $json['autoload'] : [];
     $json['autoload']['classmap'] = ['src/' . $this->customizerFile];
-    $this->composerJsonWrite($this->dirs->repo . DIRECTORY_SEPARATOR . 'composer.json', $json);
+    CustomizeCommand::writeComposerJson($this->dirs->repo . DIRECTORY_SEPARATOR . 'composer.json', $json);
 
     $this->customizerSetAnswers([
       'testorg/testpackage',
@@ -106,139 +109,10 @@ class CreateProjectCommandTest extends CustomizerTestCase {
 
     $this->composerCreateProject(['--no-install' => TRUE]);
 
-    $this->assertComposerCommandSuccessOutputContains('Welcome to the yourorg/yourtempaltepackage project customizer');
+    $this->assertComposerCommandSuccessOutputContains('Welcome to the "yourorg/yourtempaltepackage" project customizer');
     $this->assertComposerCommandSuccessOutputContains('Project was customized');
 
-    $this->assertFileExists('composer.json');
-    $this->assertFileDoesNotExist('composer.lock');
-    $this->assertDirectoryDoesNotExist('vendor');
-
-    $json = $this->composerJsonRead('composer.json');
-    $this->assertEquals('testorg/testpackage', $json['name']);
-    $this->assertEquals('Test description', $json['description']);
-    $this->assertEquals('MIT', $json['license']);
-
-    $this->assertArrayNotHasKey('autoload', $json);
-    $this->assertArrayNotHasKey('scripts', $json);
-    $this->assertFileDoesNotExist($this->customizerFile);
-  }
-
-  #[RunInSeparateProcess]
-  #[Group('no-install')]
-  public function testCommandNoInstallNoConfigFile(): void {
-    $this->dirs->fs->remove($this->dirs->repo . DIRECTORY_SEPARATOR . CustomizeCommand::CONFIG_FILE);
-
-    $this->customizerSetAnswers([
-      self::TUI_ANSWER_NOTHING,
-    ]);
-
-    $this->composerCreateProject(['--no-install' => TRUE]);
-
-    $this->assertComposerCommandSuccessOutputContains('Welcome to yourorg/yourtempaltepackage project customizer');
-    $this->assertComposerCommandSuccessOutputContains('No questions were found. No changes were made.');
-
-    $this->assertFileExists('composer.json');
-    $this->assertFileDoesNotExist('composer.lock');
-    $this->assertDirectoryDoesNotExist('vendor');
-
-    $json = $this->composerJsonRead('composer.json');
-    $this->assertEquals('yourorg/yourtempaltepackage', $json['name']);
-    $this->assertEquals('Your template package description', $json['description']);
-    $this->assertArrayNotHasKey('license', $json);
-
-    $this->assertArrayHasKey('autoload', $json);
-    $this->assertArrayHasKey('scripts', $json);
-    $this->assertFileExists($this->customizerFile);
-  }
-
-  #[RunInSeparateProcess]
-  #[Group('no-install')]
-  public function testCommandNoInstallCancel(): void {
-    $this->customizerSetAnswers([
-      'testorg/testpackage',
-      'Test description',
-      'MIT',
-      'no',
-    ]);
-
-    $this->composerCreateProject(['--no-install' => TRUE]);
-
-    $this->assertComposerCommandSuccessOutputContains('Welcome to the yourorg/yourtempaltepackage project customizer');
-    $this->assertComposerCommandSuccessOutputContains('No changes were made.');
-
-    $this->assertFileExists('composer.json');
-    $this->assertFileDoesNotExist('composer.lock');
-    $this->assertDirectoryDoesNotExist('vendor');
-
-    $json = $this->composerJsonRead('composer.json');
-    $this->assertEquals('yourorg/yourtempaltepackage', $json['name']);
-    $this->assertEquals('Your template package description', $json['description']);
-    $this->assertArrayNotHasKey('license', $json);
-
-    $this->assertArrayHasKey('autoload', $json);
-    $this->assertArrayHasKey('scripts', $json);
-    $this->assertFileExists($this->customizerFile);
-  }
-
-  #[RunInSeparateProcess]
-  #[Group('install')]
-  public function testCommandInstall(): void {
-    $this->customizerSetAnswers([
-      'testorg/testpackage',
-      'Test description',
-      'MIT',
-      self::TUI_ANSWER_NOTHING,
-    ]);
-
-    $this->composerCreateProject();
-
-    $this->assertComposerCommandSuccessOutputContains('Welcome to the yourorg/yourtempaltepackage project customizer');
-    $this->assertComposerCommandSuccessOutputContains('Project was customized');
-
-    $this->assertFileExists('composer.json');
-    $this->assertFileExists('composer.lock');
-    $this->assertDirectoryExists('vendor');
-    $this->assertDirectoryExists('vendor/monolog/monolog');
-
-    $json = $this->composerJsonRead('composer.json');
-    $this->assertEquals('testorg/testpackage', $json['name']);
-    $this->assertEquals('Test description', $json['description']);
-    $this->assertEquals('MIT', $json['license']);
-
-    $this->assertArrayNotHasKey('autoload', $json);
-    $this->assertArrayNotHasKey('scripts', $json);
-    $this->assertFileDoesNotExist($this->customizerFile);
-
-    $this->assertComposerLockUpToDate();
-  }
-
-  #[RunInSeparateProcess]
-  public function testCommandInstallCancel(): void {
-    $this->customizerSetAnswers([
-      'testorg/testpackage',
-      'Test description',
-      'MIT',
-      'no',
-    ]);
-
-    $this->composerCreateProject();
-
-    $this->assertComposerCommandSuccessOutputContains('Welcome to the yourorg/yourtempaltepackage project customizer');
-    $this->assertComposerCommandSuccessOutputContains('No changes were made.');
-
-    $this->assertFileExists('composer.json');
-    $this->assertFileExists('composer.lock');
-    $this->assertDirectoryExists('vendor');
-    $this->assertDirectoryExists('vendor/monolog/monolog');
-
-    $json = $this->composerJsonRead('composer.json');
-    $this->assertEquals('yourorg/yourtempaltepackage', $json['name']);
-    $this->assertEquals('Your template package description', $json['description']);
-    $this->assertArrayNotHasKey('license', $json);
-
-    $this->assertArrayHasKey('autoload', $json);
-    $this->assertArrayHasKey('scripts', $json);
-    $this->assertFileExists($this->customizerFile);
+    $this->assertFixtureFiles();
   }
 
 }

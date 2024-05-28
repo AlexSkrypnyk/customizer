@@ -125,7 +125,7 @@ After the installation into the template project, the Customizer will be
 triggered automatically after a user runs the `composer create-project`
 command.
 
-It will ask the user a series of questions, and will process the answers to
+It will ask the user a series of questions, and will processAnswers the answers to
 customize their instance of the template project.
 
 Run the command below to create a new project from the [template project example](https://github.com/AlexSkrypnyk/template-project-example)
@@ -157,8 +157,8 @@ questions received so far.
 Answers will be processed in the order they are defined. Process callbacks
 have access to all answers and Customizer's class public properties and methods.
 
-If a question does not have a process callback explicitly specified, a static
-method prefixed with `process` and a camel-cased question title will be called.
+If a question does not have a processAnswers callback explicitly specified, a static
+method prefixed with `processAnswers` and a camel-cased question title will be called.
 If the method does not exist, there will be no processing.
 
 [`customize.php`](customize.php) has an example of the `questions()` method.
@@ -192,15 +192,15 @@ public static function questions(CustomizeCommand $c): array {
 
           return $value;
         }),
-        // The process callback function defines how the answer is processed.
+        // The processAnswers callback function defines how the answer is processed.
         // The processing takes place only after all answers are received and
         // the user confirms the intended changes.
-        'process' => static function (string $title, string $answer, array $answers, CustomizeCommand $c): void {
-          $name = is_string($c->packageData['name'] ?? NULL) ? $c->packageData['name'] : '';
+        'processAnswers' => static function (string $title, string $answer, array $answers, CustomizeCommand $c): void {
+          $name = is_string($c->composerjsonData['name'] ?? NULL) ? $c->composerjsonData['name'] : '';
           // Update the package data.
-          $c->packageData['name'] = $answer;
+          $c->composerjsonData['name'] = $answer;
           // Write the updated composer.json file.
-          CustomizeCommand::writeComposerJson($c->cwd . '/composer.json', $c->packageData);
+          CustomizeCommand::writeComposerJson($c->cwd . '/composer.json', $c->composerjsonData);
           // Replace the package name in the project files.
           $c->replaceInPath($c->cwd, $name, $answer);
         },
@@ -209,10 +209,10 @@ public static function questions(CustomizeCommand $c): array {
         // For this question, we are using an answer from the previous question
         // in the title of the question.
         'question' => static fn(array $answers, CustomizeCommand $c): mixed => $c->io->ask(sprintf('Description for %s', $answers['Name'])),
-        'process' => static function (string $title, string $answer, array $answers, CustomizeCommand $c): void {
-          $description = is_string($c->packageData['description'] ?? NULL) ? $c->packageData['description'] : '';
-          $c->packageData['description'] = $answer;
-          CustomizeCommand::writeComposerJson($c->cwd . '/composer.json', $c->packageData);
+        'processAnswers' => static function (string $title, string $answer, array $answers, CustomizeCommand $c): void {
+          $description = is_string($c->composerjsonData['description'] ?? NULL) ? $c->composerjsonData['description'] : '';
+          $c->composerjsonData['description'] = $answer;
+          CustomizeCommand::writeComposerJson($c->cwd . '/composer.json', $c->composerjsonData);
           $c->replaceInPath($c->cwd, $description, $answer);
         },
       ],
@@ -231,38 +231,38 @@ public static function questions(CustomizeCommand $c): array {
   }
 
   public static function processLicense(string $title, string $answer, array $answers, CustomizeCommand $c): void {
-    $c->packageData['license'] = $answer;
-    CustomizeCommand::writeComposerJson($c->cwd . '/composer.json', $c->packageData);
+    $c->composerjsonData['license'] = $answer;
+    CustomizeCommand::writeComposerJson($c->cwd . '/composer.json', $c->composerjsonData);
   }
 
 }
 ```
 
-### `cleanup()`
+### `cleanupSelf()`
 
-Using the `cleanup()` method, the template project authors can additionally
-process the `composer.json` file content before all dependencies are updated.
+Using the `cleanupSelf()` method, the template project authors can additionally
+processAnswers the `composer.json` file content before all dependencies are updated.
 This runs after all answers are received and the user confirms
 the intended changes.
 
 Use `$composerjson = [];` to prevent dependencies updates by the Customizer.
-This essentially means that you are managing that process outside of this
+This essentially means that you are managing that processAnswers outside of this
 method.
 
 ```php
 /**
- * A callback to process cleanup.
+ * A callback to processAnswers cleanupSelf.
  *
  * @param array<string,mixed> $composerjson
  *   The composer.json file content passed by reference.
  * @param \AlexSkrypnyk\Customizer\CustomizeCommand $c
  *   The Customizer instance.
  */
-public static function cleanup(array &$composerjson, CustomizeCommand $c): void {
+public static function cleanupSelf(array &$composerjson, CustomizeCommand $c): void {
   // Here you can remove any sections from the composer.json file that are not
   // needed for the project before all dependencies are updated.
   //
-  // You can also additionally process files.
+  // You can also additionally processAnswers files.
 }
 ```
 
@@ -276,7 +276,7 @@ public static function messages(CustomizeCommand $c): array {
   return [
     // This is an example of a custom message that overrides the default
     // message with name `welcome`.
-    'welcome' => 'Welcome to the {{ package.name }} project customizer',
+    'title' => 'Welcome to the {{ package.name }} project customizer',
   ];
 }
 ```
@@ -333,7 +333,7 @@ composer create-project yournamespace/yourscaffold="@dev" --repository '{"type":
 
 4. The Customizer screen should appear.
 
-Repeat the process as many times as needed to test your questions and processing
+Repeat the processAnswers as many times as needed to test your questions and processing
 logic.
 
 Add `export COMPOSER_ALLOW_XDEBUG=1` before running the `composer create-project`

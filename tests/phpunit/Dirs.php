@@ -62,7 +62,11 @@ class Dirs {
    */
   public function initLocations(?callable $cb = NULL, string $root = NULL): void {
     $this->root = $root ?: $this->fileFindDir('composer.json', dirname(__FILE__) . '/../..');
+
     $this->fixtures = $this->root . '/tests/phpunit/Fixtures';
+    if (!is_dir($this->fixtures)) {
+      throw new \RuntimeException('The fixtures directory does not exist: ' . $this->fixtures);
+    }
 
     $this->build = rtrim(sys_get_temp_dir(), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'customizer-' . microtime(TRUE);
     $this->sut = $this->build . '/sut';

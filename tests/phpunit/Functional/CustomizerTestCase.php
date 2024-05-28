@@ -12,6 +12,7 @@ use AlexSkrypnyk\Customizer\Tests\Traits\DirsTrait;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\TestStatus\Error;
 use PHPUnit\Framework\TestStatus\Failure;
+use Symfony\Component\Finder\Finder;
 
 /**
  * Base class for functional tests.
@@ -67,7 +68,7 @@ class CustomizerTestCase extends TestCase {
     // Projects using this project through a plugin need to have this
     // repository added to their composer.json to be able to download it
     // during the test.
-    $json = $this->composerJsonRead($this->dirs->repo . '/composer.json');
+    $json = CustomizeCommand::readComposerJson($this->dirs->repo . '/composer.json');
     $json['repositories'] = [
       [
         'type' => 'path',
@@ -75,10 +76,10 @@ class CustomizerTestCase extends TestCase {
         'options' => ['symlink' => TRUE],
       ],
     ];
-    $this->composerJsonWrite($this->dirs->repo . '/composer.json', $json);
+    CustomizeCommand::writeComposerJson($this->dirs->repo . '/composer.json', $json);
 
     // Save the package name for later use in tests.
-    $this->packageName = $json['name'];
+    $this->packageName = is_string($json['name']) ? $json['name'] : '';
 
     // Change the current working directory to the 'system under test'.
     chdir($this->dirs->sut);
@@ -148,6 +149,83 @@ class CustomizerTestCase extends TestCase {
     $this->assertFileExists('composer.lock');
 
     $this->cmdRun('composer validate', $this->dirs->sut);
+  }
+
+  /**
+   * Assert that the fixture files match the actual files.
+   *
+   * @param array<int,string> $exclude
+   *   The list of files to exclude.
+   */
+  protected function assertFixtureFiles(array $exclude = []): void {
+    $expected = $this->dirs->fixtures . '/expected';
+    $actual = $this->dirs->sut;
+
+    if (!empty(getenv('UPDATE_TEST_FIXTURES'))) {
+      $this->dirs->fs->remove($expected);
+
+      $finder = new Finder();
+      $finder
+        ->ignoreDotFiles(FALSE)
+        ->ignoreVCS(TRUE)
+        ->files()
+        ->exclude($exclude)
+        ->in($actual);
+
+      $this->dirs->fs->mirror($actual, $expected, $finder->getIterator());
+    }
+    else {
+      $this->assertDirsEqual($expected, $actual, $exclude);
+    }
+  }
+
+  /**
+   * Compare directories.
+   *
+   * @param string $expected
+   *   The expected directory.
+   * @param string $actual
+   *   The actual directory.
+   * @param array<int,string> $exclude
+   *   The list of files to exclude.
+   */
+  protected function assertDirsEqual(string $expected, string $actual, array $exclude = []): void {
+    $finder_expected = new Finder();
+    $finder_expected
+      ->ignoreDotFiles(FALSE)
+      ->ignoreVCS(TRUE)
+      ->exclude($exclude)
+      ->files()
+      ->in($expected);
+
+    $finder_actual = new Finder();
+    $finder_actual
+      ->ignoreDotFiles(FALSE)
+      ->ignoreVCS(TRUE)
+      ->exclude($exclude)
+      ->files()
+      ->in($actual);
+
+    // Check that all files in expected are present in actual and are equal.
+    foreach ($finder_expected as $file) {
+      $this->assertFileExists($actual . '/' . $file->getRelativePathname());
+      $this->assertFileEquals($file->getPathname(), $actual . '/' . $file->getRelativePathname());
+    }
+
+    // Check that there are no unexpected files in actual.
+    foreach ($finder_actual as $file) {
+      $this->assertFileExists($expected . '/' . $file->getRelativePathname(), 'Unexpected file found: ' . $file->getRelativePathname());
+    }
+  }
+
+  /**
+   * Convert a test name to a fixture directory name.
+   */
+  protected static function toFixtureDirName(string $name): string {
+    $name = str_contains($name, '::') ? explode('::', $name)[1] : $name;
+    $name = strtolower((string) preg_replace('/(?<!^)[A-Z]/', '_$0', $name));
+
+    return str_replace('test_', '', $name);
   }
 
 }

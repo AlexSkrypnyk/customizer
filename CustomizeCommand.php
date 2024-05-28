@@ -7,7 +7,6 @@ namespace AlexSkrypnyk\Customizer;
 use Composer\Command\BaseCommand;
 use Composer\Console\Input\InputOption;
 use Composer\Util\Filesystem;
-use Symfony\Component\Console\Formatter\OutputFormatter;
 use Symfony\Component\Console\Helper\TableSeparator;
 use Symfony\Component\Console\Input\ArgvInput;
 use Symfony\Component\Console\Input\InputInterface;
@@ -21,8 +20,8 @@ use Symfony\Component\Finder\Finder;
  * This is a single-file Symfony Console Command class designed to work without
  * any additional dependencies (apart from dependencies provided by Composer)
  * during the `composer create-project` command ran with the `--no-install`.
- * It provides a way to ask questions and process answers to customize user's
- * project started from your scaffold project.
+ * It provides a way to ask questions and processAnswers answers to customize
+ * user's project started from your scaffold project.
  *
  * It also supports passing answers as a JSON string via the `--answers` option
  * or the `CUSTOMIZER_ANSWERS` environment variable.
@@ -42,6 +41,7 @@ use Symfony\Component\Finder\Finder;
  * @see https://github.com/alexSkrypnyk/customizer
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  */
 class CustomizeCommand extends BaseCommand {
 
@@ -66,11 +66,16 @@ class CustomizeCommand extends BaseCommand {
   public Filesystem $fs;
 
   /**
-   * Composer package data.
+   * Composer config file name.
+   */
+  public string $composerjson;
+
+  /**
+   * Composer config data.
    *
    * @var array<string,mixed>
    */
-  public array $packageData;
+  public array $composerjsonData;
 
   /**
    * Command was called after the Composer dependencies were installed.
@@ -78,31 +83,9 @@ class CustomizeCommand extends BaseCommand {
   public bool $isComposerDependenciesInstalled;
 
   /**
-   * A map of questions and their processing callbacks.
-   *
-   * Can be provided by the `questions()` method in this class or an external
-   * configuration file.
-   *
-   * @var array<string,array<string,string|callable>>
+   * The name of the configuration class.
    */
-  protected array $questionsMap;
-
-  /**
-   * Messages map.
-   *
-   * Can be provided by the `messages()` method in this or an external
-   * configuration file.
-   *
-   * @var array<string,string|array<string>>
-   */
-  protected array $messagesMap;
-
-  /**
-   * Additional cleanup callback.
-   *
-   * @var callable|null
-   */
-  protected mixed $cleanupCallback;
+  protected ?string $configClass;
 
   /**
    * {@inheritdoc}
@@ -120,15 +103,10 @@ class CustomizeCommand extends BaseCommand {
    * {@inheritdoc}
    */
   protected function execute(InputInterface $input, OutputInterface $output): int {
-    $this->io = $this->initIo($input, $output);
-    $this->cwd = (string) getcwd();
-    $this->fs = new Filesystem();
-    $this->initConfig();
-    $this->packageData = static::readComposerJson($this->cwd . '/composer.json');
-    $this->isComposerDependenciesInstalled = file_exists($this->cwd . '/composer.lock') && file_exists($this->cwd . '/vendor');
+    $this->init((string) getcwd(), $input, $output, 'composer.json');
 
-    $this->io->title($this->message('welcome'));
-    $this->io->block($this->message('banner'));
+    $this->io->title($this->message('title'));
+    $this->io->block($this->message('header'));
 
     $answers = $this->askQuestions();
 
@@ -150,81 +128,119 @@ class CustomizeCommand extends BaseCommand {
       return 0;
     }
 
-    $this->process($answers);
+    $this->processAnswers($answers);
 
-    $this->cleanup();
+    $this->cleanupSelf();
 
     $this->io->newLine();
     $this->io->success($this->message('result_customized'));
+
+    if (!empty($this->message('footer'))) {
+      $this->io->block($this->message('footer'));
+    }
 
     return 0;
   }
 
   /**
-   * Collect questions from self::questions(), ask them and return the answers.
+   * Collect, validate, ask questions and return the answers.
    *
-   * @return array<string, array{answer: string, process: (callable(): mixed)|string|null}>
+   * @return array<string,string>
    *   The answers to the questions as an associative array:
    *   - key: The question key.
-   *   - value: An associative array with the following keys:
-   *     - answer: The answer to the question.
-   *     - callback: The callback to process the answer. If not specified, a
-   *       method prefixed with 'process' and a camel cased question will be
-   *       called. If the method does not exist, there will be no processing.
+   *   - value: The answer to the question.
    *
    * @SuppressWarnings(PHPMD.CyclomaticComplexity)
    * @SuppressWarnings(PHPMD.NPathComplexity)
    */
   protected function askQuestions(): array {
-    $questions = $this->questionsMap;
-
     $answers = [];
-    foreach ($questions as $title => $callbacks) {
-      if (is_callable($callbacks['question'])) {
-        $answers[$title]['answer'] = (string) $callbacks['question'](array_combine(array_keys($answers), array_column($answers, 'answer')), $this);
-        $answers[$title]['process'] = $callbacks['process'] ?? NULL;
+
+    // Collect questions from this class or the config class.
+    $questions = static::questions($this);
+    if (!empty($this->configClass)) {
+      if (!method_exists($this->configClass, 'questions')) {
+        throw new \RuntimeException(sprintf('Required method `questions()` is missing in the config class %s', $this->configClass));
       }
+      $questions = $this->configClass::questions($this);
+    }
+
+    // Validate questions structure.
+    foreach ($questions as $title => $callbacks) {
+      if (!is_string($title)) {
+        throw new \RuntimeException('Question title must be a string');
+      }
+
+      if (!is_callable($callbacks['question'] ?? '')) {
+        throw new \RuntimeException(sprintf('Question "%s" must be callable', $title));
+      }
+
+      if (empty($callbacks['discover'])) {
+        $discover_method = str_replace(' ', '', str_replace(['-', '_'], ' ', 'discover ' . ucwords($title)));
+
+        // Method in the config class has a higher priority to allow the
+        // overrides of any methods provided by the current class.
+        if (!empty($this->configClass) && method_exists($this->configClass, $discover_method)) {
+          $questions[$title]['discover'] = [$this->configClass, $discover_method];
+        }
+        elseif (method_exists($this, $discover_method)) {
+          $questions[$title]['discover'] = [$this, $discover_method];
+        }
+      }
+
+      if (!empty($questions[$title]['discover']) && !is_callable($questions[$title]['discover'])) {
+        throw new \RuntimeException(sprintf('Discover callback "%s" must be callable', implode('::', $questions[$title]['discover'])));
+      }
+    }
+
+    // Discover answers from the environment and ask questions.
+    foreach ($questions as $title => $callbacks) {
+      $discovered = !empty($questions[$title]['discover']) && is_callable($callbacks['discover']) ? (string) $callbacks['discover']($this) : '';
+      $answers[(string) $title] = is_callable($callbacks['question']) ? (string) $callbacks['question']($discovered, $answers, $this) : '';
     }
 
     return $answers;
   }
 
   /**
-   * Process questions.
+   * Process answers.
    *
-   * @param non-empty-array<string,array{answer: string, process: (callable(): mixed)|string|null}> $answers
-   *   Prompts.
+   * @param array<string,string> $answers
+   *   Gathered answers.
    */
-  protected function process(array $answers): void {
-    $progress = $this->io->createProgressBar(count($answers));
-    $progress->setFormat(' %current%/%max% [%bar%] %percent:3s%% - %message%');
-    $progress->setMessage('Starting processing');
-    $progress->start();
-
-    foreach ($answers as $title => $answer) {
-      $progress->setMessage(sprintf('Processed: %s', OutputFormatter::escape($title)));
-      if (!empty($answer['process']) && is_callable($answer['process'])) {
-        call_user_func_array($answer['process'], [
-          $title,
-          $answer['answer'],
-          array_combine(array_keys($answers), array_column($answers, 'answer')),
-          $this,
-        ]);
+  protected function processAnswers(array $answers): void {
+    if (!empty($this->configClass)) {
+      if (!method_exists($this->configClass, 'process')) {
+        throw new \RuntimeException(sprintf('Required method `process()` is missing in the config class %s', $this->configClass));
       }
-      $progress->advance();
+
+      $this->configClass::process($answers, $this);
+
+      return;
     }
 
-    $progress->setMessage('Done');
-    $progress->finish();
-    $this->io->newLine();
+    static::process($answers, $this);
   }
 
   /**
-   * Cleanup the command.
+   * Cleanup after customization.
    *
    * @SuppressWarnings(PHPMD.CyclomaticComplexity)
    */
-  protected function cleanup(): void {
+  protected function cleanupSelf(): void {
+    if (!empty($this->configClass)) {
+      if (method_exists($this->configClass, 'cleanup') && !is_callable([$this->configClass, 'cleanup'])) {
+        throw new \RuntimeException(sprintf('Optional method `cleanup()` exists in the config class %s but is not callable', $this->configClass));
+      }
+      $should_proceed = $this->configClass::cleanup($this);
+
+      if ($should_proceed === FALSE) {
+        $this->debug("Customizer's was cleanup skipped by the config class.");
+
+        return;
+      }
+    }
+
     $json = $this->readComposerJson($this->cwd . '/composer.json');
 
     $is_dependency = (
@@ -245,18 +261,14 @@ class CustomizeCommand extends BaseCommand {
     static::arrayUnsetDeep($json, ['autoload-dev', 'psr-4', 'AlexSkrypnyk\\Customizer\\Tests\\']);
     static::arrayUnsetDeep($json, ['config', 'allow-plugins', 'alexskrypnyk/customizer']);
 
-    if (!empty($this->cleanupCallback)) {
-      call_user_func_array($this->cleanupCallback, [&$json, $this]);
-    }
-
     // If the package data has changed, update the composer.json file.
-    if (!empty($json) && strcmp(serialize($this->packageData), serialize($json)) !== 0) {
+    if (strcmp(serialize($this->composerjsonData), serialize($json)) !== 0) {
       $this->writeComposerJson($this->cwd . '/composer.json', $json);
 
       // We can only update the composer.lock file if the Customizer was not run
       // after the Composer dependencies were installed and the Customizer
       // was not installed as a dependency because the files will be removed
-      // and this process will no longer have required dependencies.
+      // and this processAnswers will no longer have required dependencies.
       // For a Customizer installed as a dependency, the user should run
       // `composer update` manually (or through a plugin) after the Customizer
       // is finished.
@@ -267,29 +279,83 @@ class CustomizeCommand extends BaseCommand {
     }
 
     // Find and remove the command file.
-    $finder = Finder::create()->ignoreVCS(TRUE)
-      ->exclude('vendor')
-      ->files()
-      ->in($this->cwd)
-      ->name(basename(__FILE__));
-
+    $finder = static::finder($this->cwd)->files()->name(basename(__FILE__));
     $file = iterator_to_array($finder->getIterator(), FALSE)[0] ?? NULL;
     if ($file) {
       $this->fs->remove($file->getRealPath());
     }
 
-    $this->packageData = $json;
+    // Find and remove the configuration file.
+    $finder = static::finder($this->cwd)->files()->name(self::CONFIG_FILE);
+    $file = iterator_to_array($finder->getIterator(), FALSE)[0] ?? NULL;
+    if ($file) {
+      $this->fs->remove($file->getRealPath());
+    }
+
+    $this->composerjsonData = $json;
   }
 
   /**
-   * Initialize IO.
+   * Get a message by name.
+   *
+   * @param string $name
+   *   Message name.
+   * @param array<string,string> $tokens
+   *   Tokens to replace in the message keyed by the token name wrapped in
+   *   double curly braces: ['{{ token }}' => 'value']. Current working
+   *   directory and package data are available as tokens by default.
+   *
+   * @return string
+   *   Message.
    */
-  protected static function initIo(InputInterface $input, OutputInterface $output): SymfonyStyle {
+  protected function message(string $name, array $tokens = []): string {
+    $messages = static::messages($this);
+
+    if (!empty($this->configClass)) {
+      if (method_exists($this->configClass, 'messages') && !is_callable([$this->configClass, 'messages'])) {
+        throw new \RuntimeException(sprintf('Optional method `messages()` exists in the config class %s but is not callable', $this->configClass));
+      }
+      $messages = array_replace_recursive($messages, $this->configClass::messages($this));
+    }
+
+    if (!isset($messages[$name])) {
+      throw new \InvalidArgumentException(sprintf('Message "%s" does not exist', $name));
+    }
+
+    if (empty($messages[$name])) {
+      return '';
+    }
+
+    $message = $messages[$name];
+    $message = is_array($message) ? implode("\n", $message) : $message;
+
+    $tokens += ['{{ cwd }}' => $this->cwd];
+    // Only support top-level composer.json entries as tokens for now.
+    $tokens += array_reduce(
+      array_keys($this->composerjsonData),
+      fn($carry, $key): array => is_string($this->composerjsonData[$key]) ? $carry + [sprintf('{{ package.%s }}', $key) => $this->composerjsonData[$key]] : $carry,
+      []
+    );
+
+    return strtr($message, $tokens);
+  }
+
+  /**
+   * Initialize the configuration.
+   */
+  protected function init(string $cwd, InputInterface $input, OutputInterface $output, string $composerjson): void {
+    $this->cwd = $cwd;
+    $this->fs = new Filesystem();
+    $this->composerjson = $this->cwd . DIRECTORY_SEPARATOR . $composerjson;
+    $this->composerjsonData = static::readComposerJson($this->composerjson);
+    $this->isComposerDependenciesInstalled = file_exists($this->cwd . '/composer.lock') && file_exists($this->cwd . '/vendor');
+
+    // Initialize the IO.
+    //
+    // Convert the answers (if provided) to an input stream to be used for
+    // interactive prompts.
     $answers = getenv('CUSTOMIZER_ANSWERS');
     $answers = $answers ?: $input->getOption('answers');
-
-    // Convert the answers to an input stream to be used for interactive
-    // prompts.
     if ($answers && is_string($answers)) {
       $answers = json_decode($answers, TRUE);
 
@@ -310,69 +376,9 @@ class CustomizeCommand extends BaseCommand {
       }
     }
 
-    return new SymfonyStyle($input, $output);
-  }
+    $this->io = new SymfonyStyle($input, $output);
 
-  /**
-   * Initialize the configuration.
-   *
-   * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-   * @SuppressWarnings(PHPMD.NPathComplexity)
-   */
-  protected function initConfig(): void {
-    $messages = static::messages($this);
-    $questions = static::questions($this);
-
-    $config_class = $this->loadConfigClass(self::CONFIG_FILE, $this->cwd);
-
-    // Collect maps from the config class.
-    if ($config_class) {
-      if (method_exists($config_class, 'messages')) {
-        $messages = array_replace_recursive($messages, $config_class::messages($this));
-      }
-      if (method_exists($config_class, 'questions')) {
-        $questions = $config_class::questions($this);
-      }
-      if (method_exists($config_class, 'cleanup')) {
-        $this->cleanupCallback = function (array &$composerjson) use ($config_class) {
-          return $config_class::cleanup($composerjson, $this);
-        };
-      }
-    }
-
-    // Validate messages structure.
-    foreach ($messages as $name => $message) {
-      if (!is_string($message) && !is_array($message)) {
-        throw new \RuntimeException(sprintf('Message "%s" must be a string or an array', $name));
-      }
-    }
-    $this->messagesMap = $messages;
-
-    // Validate questions structure.
-    foreach ($questions as $title => $callbacks) {
-      if (!is_callable($callbacks['question'] ?? '')) {
-        throw new \RuntimeException(sprintf('Question "%s" must be callable', $title));
-      }
-
-      // Discover process callbacks.
-      if (empty($callbacks['process'])) {
-        $method = str_replace(' ', '', str_replace(['-', '_'], ' ', 'process ' . ucwords($title)));
-
-        // Method in the config class has a higher priority to allow the
-        // overrides of any methods provided by the current class.
-        if (!empty($config_class) && method_exists($config_class, $method)) {
-          $questions[$title]['process'] = [$config_class, $method];
-        }
-        elseif (method_exists($this, $method)) {
-          $questions[$title]['process'] = [$this, $method];
-        }
-      }
-
-      if (!is_callable($questions[$title]['process'])) {
-        throw new \RuntimeException(sprintf('Process callback "%s" must be callable', implode('::', $questions[$title]['process'])));
-      }
-    }
-    $this->questionsMap = $questions;
+    $this->configClass = $this->loadConfigClass(self::CONFIG_FILE, $this->cwd);
   }
 
   /**
@@ -414,37 +420,12 @@ class CustomizeCommand extends BaseCommand {
     return $class_name;
   }
 
-  /**
-   * Get a message by name.
-   *
-   * @param string $name
-   *   Message name.
-   * @param array<string,string> $tokens
-   *   Tokens to replace in the message keyed by the token name wrapped in
-   *   double curly braces: ['{{ token }}' => 'value']. Current working
-   *   directory and package data are available as tokens by default.
-   *
-   * @return string
-   *   Message.
-   */
-  protected function message(string $name, array $tokens = []): string {
-    if (!isset($this->messagesMap[$name])) {
-      throw new \InvalidArgumentException(sprintf('Message "%s" does not exist', $name));
-    }
-
-    $message = $this->messagesMap[$name];
-    $message = is_array($message) ? implode("\n", $message) : $message;
-
-    $tokens += ['{{ cwd }}' => $this->cwd];
-    // Only support top-level composer.json entries as tokens for now.
-    $tokens += array_reduce(
-      array_keys($this->packageData),
-      fn($carry, $key): array => is_string($this->packageData[$key]) ? $carry + [sprintf('{{ package.%s }}', $key) => $this->packageData[$key]] : $carry,
-      []
-    );
-
-    return strtr($message, $tokens);
-  }
+  // ============================================================================
+  // UTILITY METHODS
+  //
+  // Note that these methods are static and public so that they could be used
+  // in the configuration class as well.
+  // ============================================================================
 
   /**
    * Run a command.
@@ -455,7 +436,7 @@ class CustomizeCommand extends BaseCommand {
    * @throws \Exception
    *   If the command fails.
    */
-  protected static function passthru(string $cmd): void {
+  public static function passthru(string $cmd): void {
     passthru($cmd, $status);
     if ($status != 0) {
       throw new \Exception('Command failed with exit code ' . $status);
@@ -470,15 +451,28 @@ class CustomizeCommand extends BaseCommand {
    * @param string $args
    *   Arguments.
    */
-  protected function debug(string $message, string ...$args): void {
+  public function debug(string $message, string ...$args): void {
     if ($this->io->isDebug()) {
       $this->io->comment(sprintf($message, ...$args));
     }
   }
 
-  // ============================================================================
-  // UTILITY METHODS
-  // ============================================================================
+  /**
+   * Provide a fresh Finder instance.
+   *
+   * @param string $dir
+   *   Directory to search.
+   * @param array<int,string> $exclude
+   *   Optional directories to exclude.
+   *
+   * @return \Symfony\Component\Finder\Finder
+   *   Finder instance.
+   */
+  public static function finder(string $dir, ?array $exclude = NULL): Finder {
+    $exclude = $exclude ?? ['.git', '.idea', 'vendor', 'node_modules'];
+
+    return Finder::create()->ignoreVCS(TRUE)->ignoreDotFiles(FALSE)->exclude($exclude)->in($dir);
+  }
 
   /**
    * Read composer.json.
@@ -515,7 +509,7 @@ class CustomizeCommand extends BaseCommand {
    *   Composer.json data as an associative array.
    */
   public static function writeComposerJson(string $file, array $data): void {
-    file_put_contents($file, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+    file_put_contents($file, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . PHP_EOL);
   }
 
   /**
@@ -539,20 +533,13 @@ class CustomizeCommand extends BaseCommand {
     $dir = dirname($path);
     $filename = basename($path);
     $is_regex = @preg_match($search, '') !== FALSE;
-    $exclude = $exclude ?? ['.git', '.idea', 'vendor', 'node_modules'];
 
     if (is_dir($path)) {
       $dir = $path;
       $filename = NULL;
     }
 
-    $finder = Finder::create()
-      ->ignoreVCS(TRUE)
-      ->ignoreDotFiles(FALSE)
-      ->exclude($exclude)
-      ->files()
-      ->contains($search)
-      ->in($dir);
+    $finder = static::finder($dir, $exclude)->files()->contains($search);
 
     if ($filename) {
       $finder->name($filename);
@@ -678,7 +665,7 @@ class CustomizeCommand extends BaseCommand {
    * @param CustomizeCommand $c
    *   The command instance.
    *
-   * @return array<string,string|array<string>>
+   * @return array<string, array<int, string>|string>
    *   An associative array of messages with message name as key and the message
    *   test as a string or an array of strings.
    *
@@ -686,12 +673,13 @@ class CustomizeCommand extends BaseCommand {
    */
   public static function messages(CustomizeCommand $c): array {
     return [
-      'welcome' => 'Welcome to {{ package.name }} project customizer',
-      'banner' => [
+      'title' => 'Welcome to {{ package.name }} project customizer',
+      'header' => [
         'Please answer the following questions to customize your project.',
         'You will be able to review your answers before proceeding.',
         'Press Ctrl+C to exit.',
       ],
+      'footer' => '',
       'proceed' => 'Proceed?',
       'result_no_changes' => 'No changes were made.',
       'result_no_questions' => 'No questions were found. No changes were made.',
@@ -702,7 +690,7 @@ class CustomizeCommand extends BaseCommand {
   /**
    * Question definitions.
    *
-   * Provide questions in this method if you are using Customizer as a
+   * Place questions into this method if you are using Customizer as a
    * single-file drop-in for your scaffold project. Otherwise - place them into
    * the configuration class.
    *
@@ -715,23 +703,67 @@ class CustomizeCommand extends BaseCommand {
    * @return array<string,array<string,string|callable>>
    *   An associative array of questions with question title as a key and the
    *   value of array with the following keys:
-   *   - question: The question callback function used to ask the question.
+   *   - question: Required question callback function used to ask the question.
    *     The callback receives the following arguments:
+   *     - discovered: A value discovered by the discover callback or NULL.
    *     - answers: An associative array of all answers received so far.
    *     - command: The CustomizeCommand object.
-   *   - process: The callback function used to process the answer. Callback
-   *     can be an anonymous function or a method of this class as
-   *     process<PascalCasedQuestion>. The callback receives the following
+   *   - discover: Optional callback function used to discover the value from
+   *     the environment. Can be an anonymous function or a method of this class
+   *     as discover<PascalCasedQuestion>. If not provided, empty string will
+   *     be passed to the question callback. The callback receives the following
    *     arguments:
-   *     - title: The current question title.
-   *     - answer: The answer to the current question.
-   *     - answers: An associative array of all answers.
    *     - command: The CustomizeCommand object.
    *
    * @SuppressWarnings(PHPMD.UnusedFormalParameter)
    */
   public static function questions(CustomizeCommand $c): array {
     return [];
+  }
+
+  /**
+   * Process answers after all answers are received.
+   *
+   * Place processing logic into this method if you are using Customizer as a
+   * single-file drop-in for your scaffold project. Otherwise - place them into
+   * the configuration class.
+   *
+   * @param array<string,string> $answers
+   *   Gathered answers.
+   * @param CustomizeCommand $c
+   *   The CustomizeCommand object.
+   *
+   * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+   */
+  public static function process(array $answers, CustomizeCommand $c): void {
+
+  }
+
+  /**
+   * Cleanup after customization.
+   *
+   * By the time this method is called, all the necessary changes have been made
+   * to the project.
+   *
+   * The Customizer will remove itself from the project and will update the
+   * composer.json as required. This method allows to alter that process as
+   * needed and, if necessary, cancel the original self-cleanup.
+   *
+   * Place cleanup logic into this method if you are using Customizer as a
+   * single-file drop-in for your scaffold project. Otherwise - place them into
+   * the configuration class.
+   *
+   * @param CustomizeCommand $c
+   *   The CustomizeCommand object.
+   *
+   * @return bool
+   *   Return FALSE to skip the further self-cleanup. Returning TRUE will
+   *   proceed with the self-cleanup.
+   *
+   * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+   */
+  public static function cleanup(CustomizeCommand $c): bool {
+    return TRUE;
   }
 
 }

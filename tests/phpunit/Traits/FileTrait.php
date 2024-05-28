@@ -11,6 +11,18 @@ use Symfony\Component\Filesystem\Filesystem;
  */
 trait FileTrait {
 
+  /**
+   * Find a directory where the file is located.
+   *
+   * @param string $file
+   *   The file to find.
+   * @param string|null $start
+   *   The directory to start the search from. If not provided, the current
+   *   file's directory will be used.
+   *
+   * @return string
+   *   The directory where the file is located.
+   */
   public function fileFindDir(string $file, ?string $start = NULL): string {
     if (empty($start)) {
       $start = dirname(__FILE__);
