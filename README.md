@@ -172,7 +172,7 @@ use AlexSkrypnyk\Customizer\CustomizeCommand;
 
 class CustomizerConfig {
 
-  public static function questions(CustomizeCommand $customizer): array {
+  public static function questions(CustomizeCommand $c): array {
     // This an example of questions that can be asked to customize the project.
     // You can adjust this method to ask questions that are relevant to your
     // project.
@@ -184,7 +184,7 @@ class CustomizerConfig {
       'Name' => [
         // The question callback function defines how the question is asked.
         // In this case, we ask the user to provide a package name as a string.
-        'question' => static fn(array $answers, CustomizeCommand $customizer): mixed => $customizer->io->ask('Package name', NULL, static function (string $value): string {
+        'question' => static fn(array $answers, CustomizeCommand $c): mixed => $c->io->ask('Package name', NULL, static function (string $value): string {
           // This is a validation callback that checks if the package name is
           // valid. If not, an exception is thrown with a message shown to the
           // user.
@@ -197,25 +197,25 @@ class CustomizerConfig {
         // The process callback function defines how the answer is processed.
         // The processing takes place only after all answers are received and
         // the user confirms the intended changes.
-        'process' => static function (string $title, string $answer, array $answers, CustomizeCommand $customizer): void {
-          $name = is_string($customizer->packageData['name'] ?? NULL) ? $customizer->packageData['name'] : '';
+        'process' => static function (string $title, string $answer, array $answers, CustomizeCommand $c): void {
+          $name = is_string($c->packageData['name'] ?? NULL) ? $c->packageData['name'] : '';
           // Update the package data.
-          $customizer->packageData['name'] = $answer;
+          $c->packageData['name'] = $answer;
           // Write the updated composer.json file.
-          $customizer->writeComposerJson($customizer->packageData);
+          CustomizeCommand::writeComposerJson($c->cwd . '/composer.json', $c->packageData);
           // Replace the package name in the project files.
-          $customizer->replaceInPath($customizer->cwd, $name, $answer);
+          $c->replaceInPath($c->cwd, $name, $answer);
         },
       ],
       'Description' => [
         // For this question, we are using an answer from the previous question
         // in the title of the question.
-        'question' => static fn(array $answers, CustomizeCommand $customizer): mixed => $customizer->io->ask(sprintf('Description for %s', $answers['Name'])),
-        'process' => static function (string $title, string $answer, array $answers, CustomizeCommand $customizer): void {
-          $description = is_string($customizer->packageData['description'] ?? NULL) ? $customizer->packageData['description'] : '';
-          $customizer->packageData['description'] = $answer;
-          $customizer->writeComposerJson($customizer->packageData);
-          $customizer->replaceInPath($customizer->cwd, $description, $answer);
+        'question' => static fn(array $answers, CustomizeCommand $c): mixed => $c->io->ask(sprintf('Description for %s', $answers['Name'])),
+        'process' => static function (string $title, string $answer, array $answers, CustomizeCommand $c): void {
+          $description = is_string($c->packageData['description'] ?? NULL) ? $c->packageData['description'] : '';
+          $c->packageData['description'] = $answer;
+          CustomizeCommand::writeComposerJson($c->cwd . '/composer.json', $c->packageData);
+          $c->replaceInPath($c->cwd, $description, $answer);
         },
       ],
       'License' => [
@@ -223,7 +223,7 @@ class CustomizerConfig {
         // For processing, we are using a separate method named 'processLicense'
         // (only for the demonstration purposes; it could have been an
         // anonymous function).
-        'question' => static fn(array $answers, CustomizeCommand $customizer): mixed => $customizer->io->choice('License type', [
+        'question' => static fn(array $answers, CustomizeCommand $c): mixed => $c->io->choice('License type', [
           'MIT',
           'GPL-3.0-or-later',
           'Apache-2.0',
@@ -232,9 +232,9 @@ class CustomizerConfig {
     ];
   }
 
-  public static function processLicense(string $title, string $answer, array $answers, CustomizeCommand $customizer): void {
-    $customizer->packageData['license'] = $answer;
-    $customizer->writeComposerJson($customizer->packageData);
+  public static function processLicense(string $title, string $answer, array $answers, CustomizeCommand $c): void {
+    $c->packageData['license'] = $answer;
+    CustomizeCommand::writeComposerJson($c->cwd . '/composer.json', $c->packageData);
   }
 
 }
@@ -253,10 +253,10 @@ the intended changes.
  *
  * @param array<string,mixed> $composerjson
  *   The composer.json file content passed by reference.
- * @param \AlexSkrypnyk\Customizer\CustomizeCommand $customizer
+ * @param \AlexSkrypnyk\Customizer\CustomizeCommand $c
  *   The Customizer instance.
  */
-public static function cleanup(array &$composerjson, CustomizeCommand $customizer): void {
+public static function cleanup(array &$composerjson, CustomizeCommand $c): void {
   // Here you can remove any sections from the composer.json file that are not
   // needed for the project before all dependencies are updated.
   //
@@ -270,7 +270,7 @@ Using the `messages()` method, the template project authors can overwrite
 messages provided by the Customizer.
 
 ```php
-public static function messages(CustomizeCommand $customizer): array {
+public static function messages(CustomizeCommand $c): array {
   return [
     // This is an example of a custom message that overrides the default
     // message with name `welcome`.
@@ -294,7 +294,7 @@ questions provided in the `.customizer.php` file.
 ## Helpers
 
 The Customizer provides a few helpers to make processing answers easier.
-These are available as properties and methods of the `$customizer` instance
+These are available as properties and methods of the `$c` instance
 passed to the processing callbacks:
 
 - `cwd` - current working directory.
