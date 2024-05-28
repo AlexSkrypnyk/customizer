@@ -124,7 +124,7 @@ class CustomizeCommand extends BaseCommand {
     $this->cwd = (string) getcwd();
     $this->fs = new Filesystem();
     $this->initConfig();
-    $this->packageData = $this->readComposerJson();
+    $this->packageData = static::readComposerJson($this->cwd . '/composer.json');
     $this->isComposerDependenciesInstalled = file_exists($this->cwd . '/composer.lock') && file_exists($this->cwd . '/vendor');
 
     $this->io->title($this->message('welcome'));
@@ -225,7 +225,7 @@ class CustomizeCommand extends BaseCommand {
    * @SuppressWarnings(PHPMD.CyclomaticComplexity)
    */
   protected function cleanup(): void {
-    $json = $this->readComposerJson();
+    $json = $this->readComposerJson($this->cwd . '/composer.json');
 
     $is_dependency = (
         !empty($json['require'])
@@ -251,7 +251,7 @@ class CustomizeCommand extends BaseCommand {
 
     // If the package data has changed, update the composer.json file.
     if (!empty($json) && strcmp(serialize($this->packageData), serialize($json)) !== 0) {
-      $this->writeComposerJson($json);
+      $this->writeComposerJson($this->cwd . '/composer.json', $json);
 
       // We can only update the composer.lock file if the Customizer was not run
       // after the Composer dependencies were installed and the Customizer
@@ -488,8 +488,8 @@ class CustomizeCommand extends BaseCommand {
    * @return array <string,mixed>
    *   Composer.json data as an associative array.
    */
-  public function readComposerJson(): array {
-    $contents = file_get_contents($this->cwd . '/composer.json');
+  public static function readComposerJson(string $file): array {
+    $contents = @file_get_contents($file);
 
     if ($contents === FALSE) {
       throw new \RuntimeException('Failed to read composer.json');
@@ -509,11 +509,13 @@ class CustomizeCommand extends BaseCommand {
    *
    * This is a helper method to be used in processing callbacks.
    *
-   * @param array<string,mixed> $data
+   * @param string $file
+   *   File path.
+   * @param array<int|string,mixed> $data
    *   Composer.json data as an associative array.
    */
-  public function writeComposerJson(array $data): void {
-    file_put_contents($this->cwd . '/composer.json', json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+  public static function writeComposerJson(string $file, array $data): void {
+    file_put_contents($file, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
   }
 
   /**
@@ -673,7 +675,7 @@ class CustomizeCommand extends BaseCommand {
    * class will **recursively replace** the messages defined here. This means
    * that only specific messages may be overridden by the configuration class.
    *
-   * @param CustomizeCommand $customizer
+   * @param CustomizeCommand $c
    *   The command instance.
    *
    * @return array<string,string|array<string>>
@@ -682,7 +684,7 @@ class CustomizeCommand extends BaseCommand {
    *
    * @SuppressWarnings(PHPMD.UnusedFormalParameter)
    */
-  public static function messages(CustomizeCommand $customizer): array {
+  public static function messages(CustomizeCommand $c): array {
     return [
       'welcome' => 'Welcome to {{ package.name }} project customizer',
       'banner' => [
@@ -728,7 +730,7 @@ class CustomizeCommand extends BaseCommand {
    *
    * @SuppressWarnings(PHPMD.UnusedFormalParameter)
    */
-  public static function questions(CustomizeCommand $customizer): array {
+  public static function questions(CustomizeCommand $c): array {
     return [];
   }
 
