@@ -567,7 +567,7 @@ class CustomizeCommand extends BaseCommand {
           $new_content = preg_replace($search, $replace, $file_content);
         }
         elseif ($replace_line) {
-          $new_content = preg_replace(sprintf('/^.*%s.*/m', $search), $replace, $file_content);
+          $new_content = preg_replace(sprintf('/^.*%s.*\R?/m', preg_quote($search, '/')), $replace, $file_content);
         }
         else {
           $new_content = str_replace($search, $replace, $file_content);

@@ -173,6 +173,33 @@ class FilesTest extends TestCase {
         ],
       ],
 
+      // Single file - whole string - complex.
+      [
+        '.',
+        [
+          'file1.txt' => "First line of the first file\nUnique string\nnon-uni/que string",
+        ],
+        'non-uni/que',
+        'other who/le new string',
+        TRUE,
+        [
+          'file1.txt' => "First line of the first file\nUnique string\nother who/le new string",
+        ],
+      ],
+
+      [
+        '.',
+        [
+          'file2.txt' => "First line of the first file\nnon-unique\nstring",
+        ],
+        'non-unique',
+        '',
+        TRUE,
+        [
+          'file2.txt' => "First line of the first file\nstring",
+        ],
+      ],
+
       // Tree - only word.
       [
         '.',
