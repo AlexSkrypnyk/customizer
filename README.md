@@ -307,6 +307,8 @@ passed to the processing callbacks:
 - `writeComposerJson()` - Write the contents of the array to the `composer.json`
   file.
 - `replaceInPath()` - Replace a string in a file or all files in a directory.
+- `replaceInPathBetween()` - Replace a string in a file or all files in a directory between two markers.
+- `uncommentLine()` - Uncomment a line in a file or all files in a directory.
 - `arrayUnsetDeep()` - Unset a fully or partially matched value in a nested
    array, removing empty arrays.
 
