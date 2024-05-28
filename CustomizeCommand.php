@@ -228,14 +228,14 @@ class CustomizeCommand extends BaseCommand {
     $json = $this->readComposerJson();
 
     $is_dependency = (
-      !empty($json['require'])
-      && is_array($json['require'])
-      && isset($json['require']['alexskrypnyk/customizer'])
-    ) || (
-      !empty($json['require-dev'])
-      && is_array($json['require-dev'])
-      && isset($json['require-dev']['alexskrypnyk/customizer'])
-    );
+        !empty($json['require'])
+        && is_array($json['require'])
+        && isset($json['require']['alexskrypnyk/customizer'])
+      ) || (
+        !empty($json['require-dev'])
+        && is_array($json['require-dev'])
+        && isset($json['require-dev']['alexskrypnyk/customizer'])
+      );
 
     static::arrayUnsetDeep($json, ['autoload', 'classmap'], basename(__FILE__), FALSE);
     static::arrayUnsetDeep($json, ['scripts', 'customize']);
@@ -528,11 +528,16 @@ class CustomizeCommand extends BaseCommand {
    * @param string $replace
    *   Replace string .
    * @param bool $replace_line
-   *   Replace for a whole line or only the occurrence.
+   *   Replace a whole line or only the occurrence.
+   * @param array<int,string>|null $exclude
+   *   Directories to exclude.
+   *   Defaults to ['.git', '.idea', 'vendor', 'node_modules'].
    */
-  public static function replaceInPath(string $path, string $search, string $replace, bool $replace_line = FALSE): void {
+  public static function replaceInPath(string $path, string $search, string $replace, bool $replace_line = FALSE, ?array $exclude = NULL): void {
     $dir = dirname($path);
     $filename = basename($path);
+    $is_regex = @preg_match($search, '') !== FALSE;
+    $exclude = $exclude ?? ['.git', '.idea', 'vendor', 'node_modules'];
 
     if (is_dir($path)) {
       $dir = $path;
@@ -542,7 +547,7 @@ class CustomizeCommand extends BaseCommand {
     $finder = Finder::create()
       ->ignoreVCS(TRUE)
       ->ignoreDotFiles(FALSE)
-      ->exclude(['vendor'])
+      ->exclude($exclude)
       ->files()
       ->contains($search)
       ->in($dir);
@@ -555,7 +560,11 @@ class CustomizeCommand extends BaseCommand {
       $file_path = $file->getRealPath();
       $file_content = file_get_contents($file_path);
       if ($file_content !== FALSE) {
-        if ($replace_line) {
+
+        if ($is_regex) {
+          $new_content = preg_replace($search, $replace, $file_content);
+        }
+        elseif ($replace_line) {
           $new_content = preg_replace(sprintf('/^.*%s.*/m', $search), $replace, $file_content);
         }
         else {
@@ -567,6 +576,41 @@ class CustomizeCommand extends BaseCommand {
         }
       }
     }
+  }
+
+  /**
+   * Replace a string in a file or all files in a directory between two markers.
+   *
+   * @param string $path
+   *   Directory or file path.
+   * @param string $search
+   *   Search string.
+   * @param string $replace
+   *   Replace string.
+   * @param string $start
+   *   Start marker.
+   * @param string $end
+   *   End marker.
+   */
+  public static function replaceInPathBetween(string $path, string $search, string $replace, string $start, string $end): void {
+    $search = empty($search) ? '.*' : preg_quote($search, '/');
+    $replace = empty($replace) ? '$1' : preg_quote($replace, '/');
+
+    self::replaceInPath($path, '/(\W?)(' . preg_quote($start, '/') . '\W' . $search . '\W' . preg_quote($end, '/') . ')(\W)/s', $replace);
+  }
+
+  /**
+   * Uncomment a line in a file or all files in a directory.
+   *
+   * @param string $path
+   *   Directory or file path.
+   * @param string $search
+   *   Search string.
+   * @param string $comment_string
+   *   Comment string.
+   */
+  public static function uncommentLine(string $path, string $search, string $comment_string = '#'): void {
+    self::replaceInPath($path, '/#\s*' . preg_quote(ltrim($search, $comment_string), '/') . '/', ltrim($search, $comment_string));
   }
 
   /**

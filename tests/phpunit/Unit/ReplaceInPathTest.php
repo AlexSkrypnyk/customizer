@@ -9,6 +9,7 @@ use AlexSkrypnyk\Customizer\Tests\Traits\DirsTrait;
 use AlexSkrypnyk\Customizer\Tests\Traits\ReflectionTrait;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\TestStatus\Failure;
 
@@ -16,6 +17,7 @@ use PHPUnit\Framework\TestStatus\Failure;
  * Test the scaffold create-project command with no-install.
  */
 #[CoversClass(CustomizeCommand::class)]
+#[Group('unit')]
 class ReplaceInPathTest extends TestCase {
 
   use DirsTrait;
@@ -67,15 +69,11 @@ class ReplaceInPathTest extends TestCase {
   public function testReplaceInPath(string $path, array $before, string $search, string $replace, bool $replaceLine, array $after): void {
     $this->createFileTree($this->dirs->sut, $before);
 
-    $this->callProtectedMethod(
-      CustomizeCommand::class,
-      'replaceInPath',
-      [
-        $this->dirs->sut . DIRECTORY_SEPARATOR . $path,
-        $search,
-        $replace,
-        $replaceLine,
-      ]
+    CustomizeCommand::replaceInPath(
+      $this->dirs->sut . DIRECTORY_SEPARATOR . $path,
+      $search,
+      $replace,
+      $replaceLine,
     );
 
     $this->assertFileTree($this->dirs->sut, $after);
@@ -237,6 +235,145 @@ class ReplaceInPathTest extends TestCase {
     ];
   }
 
+  #[DataProvider('dataProviderReplaceInPathBetween')]
+  public function testReplaceInPathBetween(string $path, array $before, string $search, string $replace, string $start, string $end, array $after): void {
+    $this->createFileTree($this->dirs->sut, $before);
+
+    CustomizeCommand::replaceInPathBetween(
+      $this->dirs->sut . DIRECTORY_SEPARATOR . $path,
+      $search,
+      $replace,
+      $start,
+      $end
+    );
+
+    $this->assertFileTree($this->dirs->sut, $after);
+  }
+
+  /**
+   * Data provider for testReplaceInPathBetween.
+   *
+   * @return array
+   *   The data.
+   */
+  public static function dataProviderReplaceInPathBetween(): array {
+    return [
+      // Single file, only word, using file, substring.
+      [
+        'file1.txt',
+        [
+          'file1.txt' => "First line of the first file\nUnique string\nstart non-unique end string",
+        ],
+        'non-unique',
+        '',
+        'start',
+        'end',
+        [
+          'file1.txt' => "First line of the first file\nUnique string\nstring",
+        ],
+      ],
+
+      // Single file, only word, using file, multiline.
+      [
+        '.',
+        [
+          'dir1' => [
+            'file1.txt' => "First line of the first file\n#;<\nUnique string inside\nnon-unique\n#;>\nUnique string outside\nnon-unique string",
+          ],
+        ],
+        '',
+        '',
+        '#;<',
+        '#;>',
+        [
+          'dir1' => [
+            'file1.txt' => "First line of the first file\nUnique string outside\nnon-unique string",
+          ],
+        ],
+      ],
+
+      // Single file, only word, using file, multiline, marker.
+      [
+        '.',
+        [
+          'dir1' => [
+            'file1.txt' => "First line of the first file\n#;<MARKER\nUnique string inside\nnon-unique\n#;>MARKER\nUnique string outside\nnon-unique string",
+            'file2.txt' => "#;<MARKER\nUnique string inside\nnon-unique\n#;>MARKER\nUnique string outside\nnon-unique string",
+            'file3.txt' => "First line of the first file\n#;<MARKER2\nUnique string inside\nnon-unique\n#;>MARKER2\nUnique string outside\nnon-unique string",
+          ],
+        ],
+        '',
+        '',
+        '#;<MARKER',
+        '#;>MARKER',
+        [
+          'dir1' => [
+            'file1.txt' => "First line of the first file\nUnique string outside\nnon-unique string",
+            'file2.txt' => "Unique string outside\nnon-unique string",
+            'file3.txt' => "First line of the first file\n#;<MARKER2\nUnique string inside\nnon-unique\n#;>MARKER2\nUnique string outside\nnon-unique string",
+          ],
+        ],
+      ],
+    ];
+  }
+
+  #[DataProvider('dataProviderUncommentLine')]
+  public function testUncommentLine(string $path, array $before, string $search, string $marker, array $after): void {
+    $this->createFileTree($this->dirs->sut, $before);
+
+    CustomizeCommand::uncommentLine(
+      $this->dirs->sut . DIRECTORY_SEPARATOR . $path,
+      $search,
+      $marker
+    );
+
+    $this->assertFileTree($this->dirs->sut, $after);
+  }
+
+  /**
+   * Data provider for testUncommentLine.
+   *
+   * @return array
+   *   The data.
+   */
+  public static function dataProviderUncommentLine(): array {
+    return [
+      [
+        '.',
+        [
+          'file1.txt' => "First line of the first file\n#Unique string\nstart non-unique end string",
+        ],
+        'Unique string',
+        '#',
+        [
+          'file1.txt' => "First line of the first file\nUnique string\nstart non-unique end string",
+        ],
+      ],
+      [
+        '.',
+        [
+          'file2.txt' => "First line of the first file\n#Unique string with suffix \nstart non-unique end string",
+        ],
+        'Unique string',
+        '#',
+        [
+          'file2.txt' => "First line of the first file\nUnique string with suffix \nstart non-unique end string",
+        ],
+      ],
+      [
+        '.',
+        [
+          'file3.txt' => "First line of the first file\n#Unique string with suffix \n#Unique string",
+        ],
+        'Unique string',
+        '#',
+        [
+          'file3.txt' => "First line of the first file\nUnique string with suffix \nUnique string",
+        ],
+      ],
+    ];
+  }
+
   /**
    * Creates a file tree from the provided structure.
    *
@@ -245,7 +382,7 @@ class ReplaceInPathTest extends TestCase {
    * @param array $structure
    *   The structure of the file tree.
    */
-  private function createFileTree(string $dir, array $structure): void {
+  protected function createFileTree(string $dir, array $structure): void {
     foreach ($structure as $name => $content) {
       $path = $dir . DIRECTORY_SEPARATOR . $name;
       if (is_array($content)) {
@@ -266,7 +403,7 @@ class ReplaceInPathTest extends TestCase {
    * @param array $structure
    *   The expected structure of the file tree.
    */
-  private function assertFileTree(string $dir, array $structure): void {
+  protected function assertFileTree(string $dir, array $structure): void {
     foreach ($structure as $name => $content) {
       $path = $dir . DIRECTORY_SEPARATOR . $name;
       if (is_array($content)) {
