@@ -15,7 +15,7 @@
 
     <file>CustomizeCommand.php</file>
     <file>Plugin.php</file>
-    <file>.customizer.php</file>
+    <file>customize.php</file>
     <file>tests/phpunit</file>
 
     <!-- Allow long array lines in tests. -->

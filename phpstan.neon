@@ -9,7 +9,7 @@ parameters:
   paths:
     - CustomizeCommand.php
     - Plugin.php
-    - .customizer.php
+    - customize.php
     - tests/phpunit
 
   excludePaths:

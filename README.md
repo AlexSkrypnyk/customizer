@@ -69,7 +69,7 @@ logic without managing the Customizer's code itself.
     }
 }
 ```
-2. Create `.customizer.php` file with questions and processing logic relevant
+2. Create `customize.php` file with questions and processing logic relevant
    to your template project and place it in anywhere in your project.
 
 These entries will be removed by the Customizer after your project's users run
@@ -114,7 +114,7 @@ Make sure to adjust the path in the `classmap` and update
 These entries will be removed by the Customizer after your project's users run
 the `composer create-project` command.
 
-4. Create `.customizer.php` file with questions and processing logic relevant
+4. Create `customize.php` file with questions and processing logic relevant
    to your template project and place it in anywhere in your project.
 
 See the [Configuration](#configuration) section below for more information.
@@ -135,7 +135,7 @@ and see the Customizer in action:
 composer create-project alexskrypnyk/template-project-example my-project
 ```
 
-The demonstration questions provided in the [`.customizer.php`](https://github.com/AlexSkrypnyk/template-project-example/blob/main/.customizer.php)
+The demonstration questions provided in the [`customize.php`](https://github.com/AlexSkrypnyk/template-project-example/blob/main/customize.php)
 file will ask you to provide a package name, description, and license.
 The answers are then processed by updating the `composer.json` file and
 replacing the package name in the project files.
@@ -144,7 +144,7 @@ replacing the package name in the project files.
 
 The template project authors can configure the Customizer, including defining
 questions and processing logic, by providing a an arbitrary class (with any
-namespace) in a `.customizer.php` file.
+namespace) in a `customize.php` file.
 
 The class has to implement `public static` methods to perform the configuration.
 
@@ -161,7 +161,7 @@ If a question does not have a process callback explicitly specified, a static
 method prefixed with `process` and a camel-cased question title will be called.
 If the method does not exist, there will be no processing.
 
-[`.customizer.php`](.customizer.php) has an example of the `questions()` method.
+[`customize.php`](customize.php) has an example of the `questions()` method.
 
 ```php
 <?php
@@ -170,9 +170,7 @@ declare(strict_types=1);
 
 use AlexSkrypnyk\Customizer\CustomizeCommand;
 
-class CustomizerConfig {
-
-  public static function questions(CustomizeCommand $c): array {
+public static function questions(CustomizeCommand $c): array {
     // This an example of questions that can be asked to customize the project.
     // You can adjust this method to ask questions that are relevant to your
     // project.
@@ -243,12 +241,12 @@ class CustomizerConfig {
 ### `cleanup()`
 
 Using the `cleanup()` method, the template project authors can additionally
-process the `composer.json` file content before all dependencies are updated. 
+process the `composer.json` file content before all dependencies are updated.
 This runs after all answers are received and the user confirms
 the intended changes.
 
-Use `$composerjson = [];` to prevent dependencies updates by the Customizer. 
-This essentially means that you are managing that process outside of this 
+Use `$composerjson = [];` to prevent dependencies updates by the Customizer.
+This essentially means that you are managing that process outside of this
 method.
 
 ```php
@@ -287,13 +285,13 @@ public static function messages(CustomizeCommand $c): array {
 
 In case when a template repository authors want to make the Customizer to be
 _truly_ drop-in single-file solution (installation [option 2](#as-a-standalone-class)
-without `.customizer.php` file), they can define the questions and processing
-logic in the `CustomizeCommand.php` file itself. In this case, `.customizer.php`
+without `customize.php` file), they can define the questions and processing
+logic in the `CustomizeCommand.php` file itself. In this case, `customize.php`
 will not be required (but is still supported).
 
-Note that if the `.customizer.php` file is present in the project, the questions
+Note that if the `customize.php` file is present in the project, the questions
 defined in the `CustomizeCommand.php` file will be ignored in favour of the
-questions provided in the `.customizer.php` file.
+questions provided in the `customize.php` file.
 
 ## Helpers
 
