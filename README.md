@@ -243,9 +243,13 @@ class CustomizerConfig {
 ### `cleanup()`
 
 Using the `cleanup()` method, the template project authors can additionally
-process the `composer.json` file content before all dependencies are updated and
-process files. This runs after all answers are received and the user confirms
+process the `composer.json` file content before all dependencies are updated. 
+This runs after all answers are received and the user confirms
 the intended changes.
+
+Use `$composerjson = [];` to prevent dependencies updates by the Customizer. 
+This essentially means that you are managing that process outside of this 
+method.
 
 ```php
 /**
