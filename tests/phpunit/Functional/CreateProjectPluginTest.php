@@ -25,7 +25,7 @@ class CreateProjectPluginTest extends CustomizerTestCase {
   #[RunInSeparateProcess]
   #[Group('install')]
   #[Group('plugin')]
-  public function testPluginInstall(): void {
+  public function testInstall(): void {
     $this->customizerSetAnswers([
       'testorg/testpackage',
       'Test description',
@@ -59,7 +59,7 @@ class CreateProjectPluginTest extends CustomizerTestCase {
   #[RunInSeparateProcess]
   #[Group('install')]
   #[Group('plugin')]
-  public function testPluginInstallAdditionalCleanup(): void {
+  public function testInstallAdditionalCleanup(): void {
     $this->dirs->fs->copy($this->dirs->fixtures . DIRECTORY_SEPARATOR . 'plugin' . DIRECTORY_SEPARATOR . CustomizeCommand::CONFIG_FILE, $this->dirs->repo . DIRECTORY_SEPARATOR . CustomizeCommand::CONFIG_FILE, TRUE);
 
     $this->customizerSetAnswers([
@@ -95,7 +95,7 @@ class CreateProjectPluginTest extends CustomizerTestCase {
   #[RunInSeparateProcess]
   #[Group('install')]
   #[Group('plugin')]
-  public function testPluginInstallNoConfigFile(): void {
+  public function testInstallNoConfigFile(): void {
     $this->dirs->fs->remove($this->dirs->repo . DIRECTORY_SEPARATOR . CustomizeCommand::CONFIG_FILE);
 
     $this->composerCreateProject();
