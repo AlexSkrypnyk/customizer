@@ -20,7 +20,7 @@ use Symfony\Component\Finder\Finder;
  * This is a single-file Symfony Console Command class designed to work without
  * any additional dependencies (apart from dependencies provided by Composer)
  * during the `composer create-project` command ran with the `--no-install`.
- * It provides a way to ask questions and processAnswers answers to customize
+ * It provides a way to ask questions and process answers to customize
  * user's project started from your scaffold project.
  *
  * It also supports passing answers as a JSON string via the `--answers` option
@@ -268,7 +268,7 @@ class CustomizeCommand extends BaseCommand {
       // We can only update the composer.lock file if the Customizer was not run
       // after the Composer dependencies were installed and the Customizer
       // was not installed as a dependency because the files will be removed
-      // and this processAnswers will no longer have required dependencies.
+      // and this process will no longer have required dependencies.
       // For a Customizer installed as a dependency, the user should run
       // `composer update` manually (or through a plugin) after the Customizer
       // is finished.
