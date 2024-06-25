@@ -125,7 +125,7 @@ After the installation into the template project, the Customizer will be
 triggered automatically after a user runs the `composer create-project`
 command.
 
-It will ask the user a series of questions, and will processAnswers the answers to
+It will ask the user a series of questions, and will process the answers to
 customize their instance of the template project.
 
 Run the command below to create a new project from the [template project example](https://github.com/AlexSkrypnyk/template-project-example)
@@ -138,7 +138,7 @@ composer create-project alexskrypnyk/template-project-example my-project
 The demonstration questions provided in the [`customize.php`](https://github.com/AlexSkrypnyk/template-project-example/blob/main/customize.php)
 file will ask you to provide a package name, description, and license.
 The answers are then processed by updating the `composer.json` file and
-replacing the package name in the project files.
+replacing the package name in other project files.
 
 ## Configuration
 
@@ -157,7 +157,7 @@ questions received so far.
 Answers will be processed in the order they are defined. Process callbacks
 have access to all answers and Customizer's class public properties and methods.
 
-If a question does not have a processAnswers callback explicitly specified, a static
+If a question does not have a `processAnswers()` callback explicitly specified, a static
 method prefixed with `processAnswers` and a camel-cased question title will be called.
 If the method does not exist, there will be no processing.
 
@@ -192,7 +192,7 @@ public static function questions(CustomizeCommand $c): array {
 
           return $value;
         }),
-        // The processAnswers callback function defines how the answer is processed.
+        // The `processAnswers()` callback function defines how the answer is processed.
         // The processing takes place only after all answers are received and
         // the user confirms the intended changes.
         'processAnswers' => static function (string $title, string $answer, array $answers, CustomizeCommand $c): void {
@@ -241,17 +241,17 @@ public static function questions(CustomizeCommand $c): array {
 ### `cleanupSelf()`
 
 Using the `cleanupSelf()` method, the template project authors can additionally
-processAnswers the `composer.json` file content before all dependencies are updated.
+process the `composer.json` file content before all dependencies are updated.
 This runs after all answers are received and the user confirms
 the intended changes.
 
 Use `$composerjson = [];` to prevent dependencies updates by the Customizer.
-This essentially means that you are managing that processAnswers outside of this
+This essentially means that you are managing that process outside of this
 method.
 
 ```php
 /**
- * A callback to processAnswers cleanupSelf.
+ * A callback to process cleanup.
  *
  * @param array<string,mixed> $composerjson
  *   The composer.json file content passed by reference.
@@ -262,7 +262,7 @@ public static function cleanupSelf(array &$composerjson, CustomizeCommand $c): v
   // Here you can remove any sections from the composer.json file that are not
   // needed for the project before all dependencies are updated.
   //
-  // You can also additionally processAnswers files.
+  // You can also additionally process files.
 }
 ```
 
@@ -312,7 +312,7 @@ passed to the processing callbacks:
 - `replaceInPathBetween()` - Replace a string in a file or all files in a directory between two markers.
 - `uncommentLine()` - Uncomment a line in a file or all files in a directory.
 - `arrayUnsetDeep()` - Unset a fully or partially matched value in a nested
-   array, removing empty arrays.
+  array, removing empty arrays.
 
 Question validation helpers are not provided in this class, but you can easily
 create them using custom regular expression or add them from the
@@ -333,7 +333,7 @@ composer create-project yournamespace/yourscaffold="@dev" --repository '{"type":
 
 4. The Customizer screen should appear.
 
-Repeat the processAnswers as many times as needed to test your questions and processing
+Repeat the process as many times as needed to test your questions and processing
 logic.
 
 Add `export COMPOSER_ALLOW_XDEBUG=1` before running the `composer create-project`
