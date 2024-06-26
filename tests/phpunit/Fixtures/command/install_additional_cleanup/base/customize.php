@@ -167,6 +167,12 @@ class Customize {
    *   proceed with the self-cleanup.
    */
   public static function cleanup(CustomizeCommand $c): bool {
+    if ($c->isComposerDependenciesInstalled) {
+      $json = $c->readComposerJson($c->composerjson);
+      $json['minimum-stability'] = 'beta';
+      $c->writeComposerJson($c->composerjson, $json);
+    }
+
     return TRUE;
   }
 

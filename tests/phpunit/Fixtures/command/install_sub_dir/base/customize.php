@@ -167,15 +167,6 @@ class Customize {
    *   proceed with the self-cleanup.
    */
   public static function cleanup(CustomizeCommand $c): bool {
-    if ($c->isComposerDependenciesInstalled) {
-      $c->debug('Add an example flag to composer.json.');
-      $json = $c->readComposerJson($c->composerjson);
-      if (isset($json['extra']) && is_array($json['extra'])) {
-        $json['extra']['customizer'] = TRUE;
-      }
-      $c->writeComposerJson($c->composerjson, $json);
-    }
-
     return TRUE;
   }
 
