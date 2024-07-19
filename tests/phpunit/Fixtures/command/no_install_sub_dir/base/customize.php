@@ -170,9 +170,8 @@ class Customize {
     if ($c->isComposerDependenciesInstalled) {
       $c->debug('Add an example flag to composer.json.');
       $json = $c->readComposerJson($c->composerjson);
-      if (is_array($json['extra'])) {
-        $json['extra']['customizer'] = TRUE;
-      }
+      $json['extra'] = is_array($json['extra']) ? $json['extra'] : [];
+      $json['extra']['customizer'] = TRUE;
       $c->writeComposerJson($c->composerjson, $json);
     }
 
