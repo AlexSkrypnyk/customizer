@@ -46,7 +46,7 @@ trait DirsTrait {
     // Check destination corresponding source.
     $finder = new Finder();
     // Find all files and directories in the source directory.
-    $finder->in($source)->ignoreDotFiles(TRUE)->ignoreVCS(FALSE);
+    $finder->in($source)->ignoreDotFiles(FALSE)->ignoreVCS(FALSE);
     if (!empty($partials)) {
       $finder->exclude($partials);
     }

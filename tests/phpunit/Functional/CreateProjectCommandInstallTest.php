@@ -32,7 +32,7 @@ class CreateProjectCommandInstallTest extends CreateProjectCommandTestCase {
     $this->assertComposerCommandSuccessOutputContains('Project was customized');
     $this->assertComposerLockUpToDate();
 
-    $this->assertDirsEqual($this->dirs->fixtures . DIRECTORY_SEPARATOR . 'expected', $this->dirs->sut, ['vendor']);
+    $this->assertFixtureDirsEqual(['vendor']);
     $this->assertDirectoryDoesNotExist($this->dirs->sut . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'alexskrypnyk/customizer');
   }
 
@@ -58,7 +58,7 @@ class CreateProjectCommandInstallTest extends CreateProjectCommandTestCase {
     $this->assertComposerCommandSuccessOutputContains('Project was customized');
     $this->assertComposerLockUpToDate();
 
-    $this->assertDirsEqual($this->dirs->fixtures . DIRECTORY_SEPARATOR . 'expected', $this->dirs->sut, ['vendor']);
+    $this->assertFixtureDirsEqual(['vendor']);
     $this->assertDirectoryDoesNotExist($this->dirs->sut . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'alexskrypnyk/customizer');
   }
 
@@ -78,7 +78,7 @@ class CreateProjectCommandInstallTest extends CreateProjectCommandTestCase {
     $this->assertComposerCommandSuccessOutputContains('Project was customized');
     $this->assertComposerLockUpToDate();
 
-    $this->assertDirsEqual($this->dirs->fixtures . DIRECTORY_SEPARATOR . 'expected', $this->dirs->sut);
+    $this->assertFixtureDirsEqual(['vendor']);
   }
 
   #[Group('install')]
@@ -88,7 +88,7 @@ class CreateProjectCommandInstallTest extends CreateProjectCommandTestCase {
     $this->assertComposerCommandSuccessOutputContains('No questions were found. No changes were made');
     $this->assertComposerLockUpToDate();
 
-    $this->assertDirsEqual($this->dirs->fixtures . DIRECTORY_SEPARATOR . 'expected', $this->dirs->sut, ['vendor']);
+    $this->assertFixtureDirsEqual(['vendor']);
     $this->assertDirectoryExists($this->dirs->sut . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'alexskrypnyk/customizer');
   }
 

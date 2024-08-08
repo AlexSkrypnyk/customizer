@@ -20,7 +20,9 @@ use Symfony\Component\Finder\Finder;
 class CustomizerTestCase extends TestCase {
 
   use ComposerTrait;
-  use DirsTrait;
+  use DirsTrait {
+    assertDirsEqual as assertDirsEqualBase;
+  }
   use CmdTrait;
 
   /**
@@ -177,6 +179,19 @@ class CustomizerTestCase extends TestCase {
     else {
       $this->assertDirsEqual($expected, $actual, $exclude);
     }
+  }
+
+  /**
+   * Assert that the fixture dir match the actual dir.
+   *
+   * @param string[] $partials
+   *   Partials.
+   */
+  protected function assertFixtureDirsEqual(array $partials = []): void {
+    $expected = $this->dirs->fixtures . '/expected';
+    $actual = $this->dirs->sut;
+
+    $this->assertDirsEqualBase($expected, $actual, $partials);
   }
 
   /**
