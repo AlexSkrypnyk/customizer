@@ -34,6 +34,11 @@ trait DirsTrait {
    *   Update destination to match with source.
    */
   public function assertDirsEqual(string $source, string $destination, array $partials = [], bool $update_destination = FALSE): void {
+    if ($update_destination) {
+      $this->dirs->fs->remove($destination);
+      $this->dirs->fs->mkdir($destination);
+    }
+
     // Check partials first, just need assert structure.
     // No need assert content inside.
     foreach ($partials as $partial) {
