@@ -32,31 +32,7 @@ trait DirsTrait {
    *   Partials.
    */
   public function assertDirsEqual(string $source, string $destination, array $partials = []): void {
-    $finder = new Finder();
-
-    // Find all files and directories in the source directory.
-    $finder->in($source)->ignoreDotFiles(TRUE)->ignoreVCS(FALSE);
-
-    foreach ($finder as $item) {
-      $relative_path = $item->getRelativePathname();
-      $destination_path = $destination . DIRECTORY_SEPARATOR . $relative_path;
-
-      if ($item->isDir()) {
-        if (!in_array($relative_path, $partials)) {
-          // Check if the directory exists in the destination.
-          $this->assertDirectoryExists($destination_path, sprintf('Directory %s does not exist.', $destination_path));
-        }
-      }
-      else {
-        $this->assertFileEquals(
-          $item->getRealPath(),
-          $destination_path,
-          sprintf('File %s does not match.', $destination_path)
-        );
-      }
-    }
-
-    // Additional assertions for items within $partials.
+    // Check partials first, just need assert structure, no need assert content inside.
     foreach ($partials as $partial) {
       $partial_source = $source . DIRECTORY_SEPARATOR . $partial;
       $partial_destination = $destination . DIRECTORY_SEPARATOR . $partial;
@@ -64,18 +40,29 @@ trait DirsTrait {
       // Ensure the partial directory exists in both source and destination.
       $this->assertDirectoryExists($partial_source, sprintf('Partial directory %s does not exist.', $partial_source));
       $this->assertDirectoryExists($partial_destination, sprintf('Partial directory %s does not exist.', $partial_destination));
+    }
 
-      // Find all files in the partial source directory.
-      $partial_finder = new Finder();
-      $partial_finder->in($partial_source)->ignoreDotFiles(TRUE)->ignoreVCS(FALSE);
+    // Check destination corresponding source.
+    $finder = new Finder();
+    // Find all files and directories in the source directory.
+    $finder->in($source)->ignoreDotFiles(TRUE)->ignoreVCS(FALSE);
+    if (!empty($partials)) {
+      $finder->exclude($partials);
+    }
+    foreach ($finder as $item) {
+      $relative_path = $item->getRelativePathname();
+      $destination_path = $destination . DIRECTORY_SEPARATOR . $relative_path;
 
-      foreach ($partial_finder as $partial_item) {
-        $relative_partial_path = $partial_item->getRelativePathname();
-        $partial_destination_path = $partial_destination . DIRECTORY_SEPARATOR . $relative_partial_path;
-
-        if ($partial_item->isFile()) {
-          $this->assertFileEquals($partial_item->getRealPath(), $partial_destination_path, sprintf('Partial file %s does not match.', $partial_destination_path));
-        }
+      if ($item->isDir()) {
+        $this->assertDirectoryExists($destination_path, sprintf('Directory %s does not exist.', $destination_path));
+      }
+      else {
+        // We do not want to assert file if file belong any partials paths.
+        $this->assertFileEquals(
+          $item->getRealPath(),
+          $destination_path,
+          sprintf('File %s does not match.', $destination_path)
+        );
       }
     }
   }

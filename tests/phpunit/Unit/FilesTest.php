@@ -455,6 +455,186 @@ class FilesTest extends TestCase {
     ]);
   }
 
+  #[DataProvider('dataProviderAssertDirsEqual')]
+  public function testAssertDirsEqual(array $dir_source_structure, array $dir_destination_structure, array $partials = []): void {
+    $source_path = $this->dirs->sut . DIRECTORY_SEPARATOR . 'source';
+    $destination_path = $this->dirs->sut . DIRECTORY_SEPARATOR . 'destination';
+
+    $this->createFileTree($source_path, $dir_source_structure);
+    $this->assertFileTree($source_path, $dir_source_structure);
+
+    $this->createFileTree($destination_path, $dir_destination_structure);
+    $this->assertFileTree($destination_path, $dir_destination_structure);
+
+    $this->assertDirsEqual($source_path, $destination_path, $partials);
+  }
+
+  /**
+   * Data provider for testAssertDirsEqual.
+   *
+   * @return array<mixed>
+   *   The data.
+   */
+  public static function dataProviderAssertDirsEqual(): array {
+    return [
+      [
+        [
+          'dir1' => [],
+          'dir2' => [],
+          'dir3' => [
+            'file1' => 'test text',
+            'file2' => 'test text',
+          ],
+          'file1' => 'test test',
+          'file2' => 'test test',
+        ],
+        [
+          'dir1' => [
+            'file1' => 'test text',
+            'file2' => 'test text',
+            'dir1-1' => [
+              'file1' => 'test text',
+              'file2' => 'test text',
+            ],
+          ],
+          'dir2' => [],
+          'dir3' => [
+            'file1' => 'test text',
+            'file2' => 'test text',
+          ],
+          'file1' => 'test test',
+          'file2' => 'test test',
+        ],
+        [],
+      ],
+      [
+        [
+          'dir3' => [
+            'file1-not-in-destination' => 'test text',
+          ],
+          'file1' => 'test test',
+          'file2' => 'test test',
+        ],
+        [
+          'dir1' => [
+            'file1' => 'test text',
+            'file2' => 'test text',
+            'dir1-1' => [
+              'file1' => 'test text',
+              'file2' => 'test text',
+            ],
+          ],
+          'dir2' => [],
+          'dir3' => [
+            'file1' => 'test text',
+            'file2' => 'test text',
+          ],
+          'file1' => 'test test',
+          'file2' => 'test test',
+        ],
+        ['dir3'],
+      ],
+      [
+        [
+          'dir2' => [
+            'dir2-1' => [
+              'file1-not-in-destination' => 'test',
+            ],
+            'dir2-2' => [
+              'file1' => 'test',
+            ],
+            'dir2-3' => [
+              'file1' => 'test',
+            ],
+          ],
+          'file1' => 'test test',
+          'file2' => 'test test',
+        ],
+        [
+          'dir1' => [
+            'file1' => 'test text',
+            'file2' => 'test text',
+            'dir1-1' => [
+              'file1' => 'test text',
+              'file2' => 'test text',
+            ],
+          ],
+          'dir2' => [
+            'file1' => 'test',
+            'dir2-1' => [
+              'file1' => 'test',
+              'file2' => 'test',
+            ],
+            'dir2-2' => [
+              'file1' => 'test',
+              'file2' => 'test',
+            ],
+            'dir2-3' => [
+              'file1' => 'test',
+            ],
+          ],
+          'dir3' => [
+            'file1' => 'test text',
+            'file2' => 'test text',
+          ],
+          'file1' => 'test test',
+          'file2' => 'test test',
+        ],
+        ['dir2/dir2-1', 'dir2/dir2-2'],
+      ],
+      [
+        [
+          'dir2' => [
+            'dir2-1' => [
+              'file1-not-in-destination' => 'test',
+            ],
+            'dir2-2' => [
+              'dir2-2-1' => [
+                'file1' => 'test',
+              ],
+            ],
+            'dir2-3' => [
+              'file1' => 'test',
+            ],
+          ],
+          'file1' => 'test test',
+          'file2' => 'test test',
+        ],
+        [
+          'dir1' => [
+            'file1' => 'test text',
+            'file2' => 'test text',
+            'dir1-1' => [
+              'file1' => 'test text',
+              'file2' => 'test text',
+            ],
+          ],
+          'dir2' => [
+            'file1' => 'test',
+            'dir2-1' => [
+              'file1' => 'test',
+              'file2' => 'test',
+            ],
+            'dir2-2' => [
+              'file1' => 'test',
+              'file2' => 'test',
+            ],
+            'dir2-3' => [
+              'file1' => 'test',
+            ],
+          ],
+          'dir3' => [
+            'file1' => 'test text',
+            'file2' => 'test text',
+          ],
+          'file1' => 'test test',
+          'file2' => 'test test',
+        ],
+        ['dir2/dir2-1', 'dir2/dir2-2'],
+      ],
+    ];
+  }
+
   /**
    * Creates a file tree from the provided structure.
    *
