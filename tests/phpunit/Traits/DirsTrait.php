@@ -32,7 +32,8 @@ trait DirsTrait {
    *   Partials.
    */
   public function assertDirsEqual(string $source, string $destination, array $partials = []): void {
-    // Check partials first, just need assert structure, no need assert content inside.
+    // Check partials first, just need assert structure.
+    // No need assert content inside.
     foreach ($partials as $partial) {
       $partial_source = $source . DIRECTORY_SEPARATOR . $partial;
       $partial_destination = $destination . DIRECTORY_SEPARATOR . $partial;
