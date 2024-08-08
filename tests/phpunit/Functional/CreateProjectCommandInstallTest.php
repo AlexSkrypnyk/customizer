@@ -31,8 +31,8 @@ class CreateProjectCommandInstallTest extends CreateProjectCommandTestCase {
     $this->assertComposerCommandSuccessOutputContains('Welcome to the "yourorg/yourtempaltepackage" project customizer');
     $this->assertComposerCommandSuccessOutputContains('Project was customized');
     $this->assertComposerLockUpToDate();
-    $this->assertFileEquals($this->dirs->fixtures . DIRECTORY_SEPARATOR . 'expected' . DIRECTORY_SEPARATOR . 'composer.json', $this->dirs->sut . DIRECTORY_SEPARATOR . 'composer.json');
-    $this->assertDirectoryExists($this->dirs->sut . DIRECTORY_SEPARATOR . 'vendor');
+
+    $this->assertDirsEqual($this->dirs->fixtures . DIRECTORY_SEPARATOR . 'expected', $this->dirs->sut, ['vendor']);
     $this->assertDirectoryDoesNotExist($this->dirs->sut . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'alexskrypnyk/customizer');
   }
 
@@ -57,8 +57,8 @@ class CreateProjectCommandInstallTest extends CreateProjectCommandTestCase {
     $this->assertComposerCommandSuccessOutputContains('Welcome to the "yourorg/yourtempaltepackage" project customizer');
     $this->assertComposerCommandSuccessOutputContains('Project was customized');
     $this->assertComposerLockUpToDate();
-    $this->assertFileEquals($this->dirs->fixtures . DIRECTORY_SEPARATOR . 'expected' . DIRECTORY_SEPARATOR . 'composer.json', $this->dirs->sut . DIRECTORY_SEPARATOR . 'composer.json');
-    $this->assertDirectoryExists($this->dirs->sut . DIRECTORY_SEPARATOR . 'vendor');
+
+    $this->assertDirsEqual($this->dirs->fixtures . DIRECTORY_SEPARATOR . 'expected', $this->dirs->sut, ['vendor']);
     $this->assertDirectoryDoesNotExist($this->dirs->sut . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'alexskrypnyk/customizer');
   }
 
@@ -77,7 +77,8 @@ class CreateProjectCommandInstallTest extends CreateProjectCommandTestCase {
     $this->assertComposerCommandSuccessOutputContains('Welcome to the "yourorg/yourtempaltepackage" project customizer');
     $this->assertComposerCommandSuccessOutputContains('Project was customized');
     $this->assertComposerLockUpToDate();
-    $this->assertFileEquals($this->dirs->fixtures . DIRECTORY_SEPARATOR . 'expected' . DIRECTORY_SEPARATOR . 'composer.json', $this->dirs->sut . DIRECTORY_SEPARATOR . 'composer.json');
+
+    $this->assertDirsEqual($this->dirs->fixtures . DIRECTORY_SEPARATOR . 'expected', $this->dirs->sut);
   }
 
   #[Group('install')]
@@ -86,8 +87,8 @@ class CreateProjectCommandInstallTest extends CreateProjectCommandTestCase {
     $this->composerCreateProject();
     $this->assertComposerCommandSuccessOutputContains('No questions were found. No changes were made');
     $this->assertComposerLockUpToDate();
-    $this->assertFileEquals($this->dirs->fixtures . DIRECTORY_SEPARATOR . 'expected' . DIRECTORY_SEPARATOR . 'composer.json', $this->dirs->sut . DIRECTORY_SEPARATOR . 'composer.json');
-    $this->assertDirectoryExists($this->dirs->sut . DIRECTORY_SEPARATOR . 'vendor');
+
+    $this->assertDirsEqual($this->dirs->fixtures . DIRECTORY_SEPARATOR . 'expected', $this->dirs->sut, ['vendor']);
     $this->assertDirectoryExists($this->dirs->sut . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'alexskrypnyk/customizer');
   }
 

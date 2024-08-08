@@ -180,45 +180,6 @@ class CustomizerTestCase extends TestCase {
   }
 
   /**
-   * Compare directories.
-   *
-   * @param string $expected
-   *   The expected directory.
-   * @param string $actual
-   *   The actual directory.
-   * @param array<int,string> $exclude
-   *   The list of files to exclude.
-   */
-  protected function assertDirsEqual(string $expected, string $actual, array $exclude = []): void {
-    $finder_expected = new Finder();
-    $finder_expected
-      ->ignoreDotFiles(FALSE)
-      ->ignoreVCS(TRUE)
-      ->exclude($exclude)
-      ->files()
-      ->in($expected);
-
-    $finder_actual = new Finder();
-    $finder_actual
-      ->ignoreDotFiles(FALSE)
-      ->ignoreVCS(TRUE)
-      ->exclude($exclude)
-      ->files()
-      ->in($actual);
-
-    // Check that all files in expected are present in actual and are equal.
-    foreach ($finder_expected as $file) {
-      $this->assertFileExists($actual . '/' . $file->getRelativePathname());
-      $this->assertFileEquals($file->getPathname(), $actual . '/' . $file->getRelativePathname());
-    }
-
-    // Check that there are no unexpected files in actual.
-    foreach ($finder_actual as $file) {
-      $this->assertFileExists($expected . '/' . $file->getRelativePathname(), 'Unexpected file found: ' . $file->getRelativePathname());
-    }
-  }
-
-  /**
    * Convert a test name to a fixture directory name.
    */
   protected static function toFixtureDirName(string $name): string {

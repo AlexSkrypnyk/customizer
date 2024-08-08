@@ -45,7 +45,7 @@ class CreateProjectCommandNoInstallTest extends CreateProjectCommandTestCase {
     $this->assertComposerCommandSuccessOutputContains('Welcome to the "yourorg/yourtempaltepackage" project customizer');
     $this->assertComposerCommandSuccessOutputContains('Project was customized');
 
-    $this->assertFixtureFiles();
+    $this->assertDirsEqual($this->dirs->fixtures . '/expected', $this->dirs->sut);
   }
 
   #[RunInSeparateProcess]
@@ -75,7 +75,7 @@ class CreateProjectCommandNoInstallTest extends CreateProjectCommandTestCase {
     $this->assertComposerCommandSuccessOutputContains('Welcome to the "yourorg/yourtempaltepackage" project customizer');
     $this->assertComposerCommandSuccessOutputContains('Project was customized');
 
-    $this->assertFixtureFiles();
+    $this->assertDirsEqual($this->dirs->fixtures . '/expected', $this->dirs->sut);
   }
 
 }
