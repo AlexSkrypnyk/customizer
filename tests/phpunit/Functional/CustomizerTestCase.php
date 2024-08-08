@@ -190,8 +190,9 @@ class CustomizerTestCase extends TestCase {
   protected function assertFixtureDirsEqual(array $partials = []): void {
     $expected = $this->dirs->fixtures . '/expected';
     $actual = $this->dirs->sut;
+    $is_update_test_fixtures = !empty(getenv('UPDATE_TEST_FIXTURES'));
 
-    $this->assertDirsEqualBase($expected, $actual, $partials);
+    $this->assertDirsEqualBase($expected, $actual, $partials, $is_update_test_fixtures);
   }
 
   /**

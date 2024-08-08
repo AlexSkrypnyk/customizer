@@ -30,8 +30,10 @@ trait DirsTrait {
    *   Destination directory.
    * @param string[] $partials
    *   Partials.
+   * @param bool $update_destination
+   *   Update destination to match with source.
    */
-  public function assertDirsEqual(string $source, string $destination, array $partials = []): void {
+  public function assertDirsEqual(string $source, string $destination, array $partials = [], bool $update_destination = FALSE): void {
     // Check partials first, just need assert structure.
     // No need assert content inside.
     foreach ($partials as $partial) {
@@ -40,6 +42,9 @@ trait DirsTrait {
 
       // Ensure the partial directory exists in both source and destination.
       $this->assertDirectoryExists($partial_source, sprintf('Partial directory %s does not exist.', $partial_source));
+      if ($update_destination) {
+        $this->dirs->fs->mkdir($partial_destination);
+      }
       $this->assertDirectoryExists($partial_destination, sprintf('Partial directory %s does not exist.', $partial_destination));
     }
 
@@ -55,9 +60,15 @@ trait DirsTrait {
       $destination_path = $destination . DIRECTORY_SEPARATOR . $relative_path;
 
       if ($item->isDir()) {
+        if ($update_destination) {
+          $this->dirs->fs->mkdir($destination_path);
+        }
         $this->assertDirectoryExists($destination_path, sprintf('Directory %s does not exist.', $destination_path));
       }
       else {
+        if ($update_destination) {
+          $this->dirs->fs->copy($item->getRealPath(), $destination_path);
+        }
         // We do not want to assert file if file belong any partials paths.
         $this->assertFileEquals(
           $item->getRealPath(),
