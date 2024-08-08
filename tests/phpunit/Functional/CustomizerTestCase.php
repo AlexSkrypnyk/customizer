@@ -163,22 +163,7 @@ class CustomizerTestCase extends TestCase {
     $expected = $this->dirs->fixtures . '/expected';
     $actual = $this->dirs->sut;
 
-    if (!empty(getenv('UPDATE_TEST_FIXTURES'))) {
-      $this->dirs->fs->remove($expected);
-
-      $finder = new Finder();
-      $finder
-        ->ignoreDotFiles(FALSE)
-        ->ignoreVCS(TRUE)
-        ->files()
-        ->exclude($exclude)
-        ->in($actual);
-
-      $this->dirs->fs->mirror($actual, $expected, $finder->getIterator());
-    }
-    else {
-      $this->assertDirsEqual($expected, $actual, $exclude);
-    }
+    $this->assertDirsEqual($expected, $actual, $exclude, !empty(getenv('UPDATE_TEST_FIXTURES')));
   }
 
   /**
@@ -191,8 +176,17 @@ class CustomizerTestCase extends TestCase {
     $expected = $this->dirs->fixtures . '/expected';
     $actual = $this->dirs->sut;
     $is_update_test_fixtures = !empty(getenv('UPDATE_TEST_FIXTURES'));
+    if (!empty(getenv('UPDATE_TEST_FIXTURES'))) {
+      $this->dirs->fs->remove($expected);
+      $finder = new Finder();
+      $finder
+        ->ignoreDotFiles(FALSE)
+        ->ignoreVCS(TRUE)
+        ->in($actual);
 
-    $this->assertDirsEqualBase($expected, $actual, $partials, $is_update_test_fixtures);
+      $this->dirs->fs->mirror($actual, $expected, $finder->getIterator());
+    }
+    $this->assertDirsEqualBase($expected, $actual, $partials);
   }
 
   /**
