@@ -35,7 +35,7 @@ trait DirsTrait {
     $finder = new Finder();
 
     // Find all files and directories in the source directory.
-    $finder->in($source)->ignoreDotFiles(FALSE)->ignoreVCS(FALSE);
+    $finder->in($source)->ignoreDotFiles(TRUE)->ignoreVCS(FALSE);
 
     foreach ($finder as $item) {
       $relative_path = $item->getRelativePathname();
@@ -67,7 +67,7 @@ trait DirsTrait {
 
       // Find all files in the partial source directory.
       $partial_finder = new Finder();
-      $partial_finder->in($partial_source)->ignoreDotFiles(FALSE)->ignoreVCS(FALSE);
+      $partial_finder->in($partial_source)->ignoreDotFiles(TRUE)->ignoreVCS(FALSE);
 
       foreach ($partial_finder as $partial_item) {
         $relative_partial_path = $partial_item->getRelativePathname();
