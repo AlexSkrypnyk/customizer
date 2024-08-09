@@ -20,7 +20,9 @@ use Symfony\Component\Finder\Finder;
 class CustomizerTestCase extends TestCase {
 
   use ComposerTrait;
-  use DirsTrait;
+  use DirsTrait {
+    assertDirsEqual as assertDirsEqualBase;
+  }
   use CmdTrait;
 
   /**
@@ -180,42 +182,17 @@ class CustomizerTestCase extends TestCase {
   }
 
   /**
-   * Compare directories.
+   * Assert that the fixture dir match the actual dir.
    *
-   * @param string $expected
-   *   The expected directory.
-   * @param string $actual
-   *   The actual directory.
-   * @param array<int,string> $exclude
-   *   The list of files to exclude.
+   * @param string[] $partials
+   *   Partials.
    */
-  protected function assertDirsEqual(string $expected, string $actual, array $exclude = []): void {
-    $finder_expected = new Finder();
-    $finder_expected
-      ->ignoreDotFiles(FALSE)
-      ->ignoreVCS(TRUE)
-      ->exclude($exclude)
-      ->files()
-      ->in($expected);
+  protected function assertFixtureDirsEqual(array $partials = []): void {
+    $expected = $this->dirs->fixtures . '/expected';
+    $actual = $this->dirs->sut;
+    $is_update_expectation = !empty(getenv('UPDATE_TEST_FIXTURES'));
 
-    $finder_actual = new Finder();
-    $finder_actual
-      ->ignoreDotFiles(FALSE)
-      ->ignoreVCS(TRUE)
-      ->exclude($exclude)
-      ->files()
-      ->in($actual);
-
-    // Check that all files in expected are present in actual and are equal.
-    foreach ($finder_expected as $file) {
-      $this->assertFileExists($actual . '/' . $file->getRelativePathname());
-      $this->assertFileEquals($file->getPathname(), $actual . '/' . $file->getRelativePathname());
-    }
-
-    // Check that there are no unexpected files in actual.
-    foreach ($finder_actual as $file) {
-      $this->assertFileExists($expected . '/' . $file->getRelativePathname(), 'Unexpected file found: ' . $file->getRelativePathname());
-    }
+    $this->assertDirsEqualBase($expected, $actual, $partials, $is_update_expectation);
   }
 
   /**

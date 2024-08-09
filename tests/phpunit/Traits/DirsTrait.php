@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AlexSkrypnyk\Customizer\Tests\Traits;
 
 use AlexSkrypnyk\Customizer\Tests\Dirs;
+use Symfony\Component\Finder\Finder;
 
 /**
  * Trait DirsTrait.
@@ -19,6 +20,64 @@ trait DirsTrait {
    * @var \AlexSkrypnyk\Customizer\Tests\Dirs
    */
   protected $dirs;
+
+  /**
+   * Assert dirs equal.
+   *
+   * @param string $source
+   *   Source directory.
+   * @param string $destination
+   *   Destination directory.
+   * @param string[] $partials
+   *   Partials.
+   * @param bool $update_source
+   *   Update source to match with destination.
+   */
+  public function assertDirsEqual(string $source, string $destination, array $partials = [], bool $update_source = FALSE): void {
+    $fs = $this->dirs->fs;
+    // Check partials first, just need assert structure.
+    // No need assert content inside.
+    foreach ($partials as $partial) {
+      $partial_source = $source . DIRECTORY_SEPARATOR . $partial;
+      $partial_destination = $destination . DIRECTORY_SEPARATOR . $partial;
+
+      if ($fs->exists($partial_destination) && $update_source && !$fs->exists($partial_source)) {
+        $fs->mkdir($partial_source);
+      }
+
+      // Ensure the partial directory exists in both source and destination.
+      $this->assertDirectoryExists($partial_source, sprintf('Partial directory %s does not exist.', $partial_source));
+      $this->assertDirectoryExists($partial_destination, sprintf('Partial directory %s does not exist.', $partial_destination));
+    }
+
+    // Check destination corresponding source.
+    $finder = new Finder();
+    // Find all files and directories in the source directory.
+    $finder->in($source)->ignoreDotFiles(FALSE)->ignoreVCS(FALSE);
+    if (!empty($partials)) {
+      $finder->exclude($partials);
+    }
+    foreach ($finder as $item) {
+      $relative_path = $item->getRelativePathname();
+      $destination_path = $destination . DIRECTORY_SEPARATOR . $relative_path;
+
+      if ($item->isDir()) {
+        $this->assertDirectoryExists($destination_path, sprintf('Directory %s does not exist.', $destination_path));
+      }
+      else {
+        if ($fs->exists($destination_path) && $update_source) {
+          $this->dirs->fs->copy($destination_path, $item->getRealPath());
+        }
+
+        // We do not want to assert file if file belong any partials paths.
+        $this->assertFileEquals(
+          $item->getRealPath(),
+          $destination_path,
+          sprintf('File %s does not match.', $destination_path)
+        );
+      }
+    }
+  }
 
   /**
    * Initialize the directories.
