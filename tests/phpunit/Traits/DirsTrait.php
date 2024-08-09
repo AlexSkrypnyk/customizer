@@ -41,7 +41,7 @@ trait DirsTrait {
       $partial_source = $source . DIRECTORY_SEPARATOR . $partial;
       $partial_destination = $destination . DIRECTORY_SEPARATOR . $partial;
 
-      if ($fs->exists($partial_destination) && $update_source) {
+      if ($fs->exists($partial_destination) && $update_source && !$fs->exists($partial_source)) {
         $fs->mkdir($partial_source);
       }
 
