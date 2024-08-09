@@ -31,7 +31,7 @@ trait DirsTrait {
    * @param string[] $partials
    *   Partials.
    * @param bool $update_source
-   *   Update destination to match with source.
+   *   Update source to match with destination.
    */
   public function assertDirsEqual(string $source, string $destination, array $partials = [], bool $update_source = FALSE): void {
     $fs = $this->dirs->fs;
