@@ -5,78 +5,39 @@ declare(strict_types=1);
 namespace AlexSkrypnyk\Customizer\Tests\Functional;
 
 use AlexSkrypnyk\Customizer\CustomizeCommand;
-use AlexSkrypnyk\Customizer\Tests\Traits\DirsTrait;
 use AlexSkrypnyk\Customizer\Tests\Traits\ReflectionTrait;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
-use PHPUnit\Framework\TestCase;
-use PHPUnit\Framework\TestStatus\Failure;
 
 /**
  * Test for helpers used in operations on files.
  */
 #[CoversClass(CustomizeCommand::class)]
 #[Group('unit')]
-class FilesTest extends TestCase {
+class FilesTest extends CustomizerTestCase {
 
-  use DirsTrait;
   use ReflectionTrait;
 
   /**
    * {@inheritdoc}
    */
   protected function setUp(): void {
-    parent::setUp();
-
-    $this->dirsInit();
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  protected function tearDown(): void {
-    if (!$this->hasFailed()) {
-      $this->dirsClean();
-    }
-
-    parent::tearDown();
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  protected function onNotSuccessfulTest(\Throwable $t): never {
-    $this->dirsInfo();
-
-    // Rethrow the exception to allow the test to fail normally.
-    parent::onNotSuccessfulTest($t);
-  }
-
-  /**
-   * Check if the test has failed.
-   *
-   * @return bool
-   *   TRUE if the test has failed, FALSE otherwise.
-   */
-  public function hasFailed(): bool {
-    $status = $this->status();
-
-    return $status instanceof Failure;
+    $this->initLocations((string) getcwd());
   }
 
   #[DataProvider('dataProviderReplaceInPath')]
   public function testReplaceInPath(string $path, array $before, string $search, string $replace, bool $replaceLine, array $after): void {
-    $this->createFileTree($this->dirs->sut, $before);
+    $this->createFileTree(static::$sut, $before);
 
     CustomizeCommand::replaceInPath(
-      $this->dirs->sut . DIRECTORY_SEPARATOR . $path,
+      static::$sut . DIRECTORY_SEPARATOR . $path,
       $search,
       $replace,
       $replaceLine,
     );
 
-    $this->assertFileTree($this->dirs->sut, $after);
+    $this->assertFileTree(static::$sut, $after);
   }
 
   /**
@@ -264,17 +225,17 @@ class FilesTest extends TestCase {
 
   #[DataProvider('dataProviderReplaceInPathBetween')]
   public function testReplaceInPathBetween(string $path, array $before, string $search, string $replace, string $start, string $end, array $after): void {
-    $this->createFileTree($this->dirs->sut, $before);
+    $this->createFileTree(static::$sut, $before);
 
     CustomizeCommand::replaceInPathBetween(
-      $this->dirs->sut . DIRECTORY_SEPARATOR . $path,
+      static::$sut . DIRECTORY_SEPARATOR . $path,
       $search,
       $replace,
       $start,
       $end
     );
 
-    $this->assertFileTree($this->dirs->sut, $after);
+    $this->assertFileTree(static::$sut, $after);
   }
 
   /**
@@ -346,15 +307,15 @@ class FilesTest extends TestCase {
 
   #[DataProvider('dataProviderUncommentLine')]
   public function testUncommentLine(string $path, array $before, string $search, string $marker, array $after): void {
-    $this->createFileTree($this->dirs->sut, $before);
+    $this->createFileTree(static::$sut, $before);
 
     CustomizeCommand::uncommentLine(
-      $this->dirs->sut . DIRECTORY_SEPARATOR . $path,
+      static::$sut . DIRECTORY_SEPARATOR . $path,
       $search,
       $marker
     );
 
-    $this->assertFileTree($this->dirs->sut, $after);
+    $this->assertFileTree(static::$sut, $after);
   }
 
   /**
@@ -404,7 +365,7 @@ class FilesTest extends TestCase {
   #[DataProvider('dataProviderReadComposerJson')]
   public function testReadComposerJson(string $before, string $after, ?string $exception_message = NULL): void {
     if (!empty($before)) {
-      $this->createFileTree($this->dirs->sut, ['composer.json' => $before]);
+      $this->createFileTree(static::$sut, ['composer.json' => $before]);
     }
 
     if ($exception_message) {
@@ -412,10 +373,10 @@ class FilesTest extends TestCase {
       $this->expectExceptionMessage($exception_message);
     }
 
-    CustomizeCommand::readComposerJson($this->dirs->sut . '/composer.json');
+    CustomizeCommand::readComposerJson(static::$sut . '/composer.json');
 
     if (!$exception_message) {
-      $this->assertFileTree($this->dirs->sut, ['composer.json' => $after]);
+      $this->assertFileTree(static::$sut, ['composer.json' => $after]);
     }
   }
 
@@ -445,8 +406,8 @@ class FilesTest extends TestCase {
   }
 
   public function testWriteComposerJson(): void {
-    CustomizeCommand::writeComposerJson($this->dirs->sut . '/composer.json', [1, 2, 3]);
-    $this->assertFileTree($this->dirs->sut, [
+    CustomizeCommand::writeComposerJson(static::$sut . '/composer.json', [1, 2, 3]);
+    $this->assertFileTree(static::$sut, [
       'composer.json' => "[
     1,
     2,
