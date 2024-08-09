@@ -59,8 +59,7 @@ class Customize {
         // The discover callback function is used to discover the value from the
         // environment. In this case, we use the current directory name
         // and the GITHUB_ORG environment variable to generate the package name.
-        // @phpstan-ignore-next-line
-        'discover' => static function (CustomizeCommand $c): ?string {
+        'discover' => static function (CustomizeCommand $c): string {
           $name = basename((string) getcwd());
           $org = getenv('GITHUB_ORG') ?: 'acme';
 

@@ -13,8 +13,8 @@ use PHPUnit\Framework\Attributes\RunInSeparateProcess;
  * Test Customizer using `composer create-project --no-install`.
  */
 #[CoversClass(CustomizeCommand::class)]
-#[Group('command')]
-class CreateProjectCommandNoInstallTest extends CreateProjectCommandTestCase {
+#[Group('no-install')]
+class CreateProjectCommandNoInstallTest extends CustomizerTestCase {
 
   /**
    * {@inheritdoc}
@@ -23,59 +23,57 @@ class CreateProjectCommandNoInstallTest extends CreateProjectCommandTestCase {
     parent::setUp();
     // Update the 'autoload' to include the command file from the project
     // root to get code test coverage.
-    $json = CustomizeCommand::readComposerJson($this->dirs->repo . '/composer.json');
+    $json = CustomizeCommand::readComposerJson(static::$repo . '/composer.json');
     $json['autoload'] = is_array($json['autoload']) ? $json['autoload'] : [];
-    $json['autoload']['classmap'] = [$this->dirs->root . DIRECTORY_SEPARATOR . $this->customizerFile];
-    CustomizeCommand::writeComposerJson($this->dirs->repo . '/composer.json', $json);
+    $json['autoload']['classmap'] = [static::$root . DIRECTORY_SEPARATOR . 'CustomizeCommand.php'];
+    CustomizeCommand::writeComposerJson(static::$repo . '/composer.json', $json);
   }
 
-  #[Group('no-install')]
-  #[Group('smoke')]
   #[RunInSeparateProcess]
   public function testNoInstall(): void {
-    $this->customizerSetAnswers([
+    CustomizerTestCase::customizerSetAnswers([
       'testorg/testpackage',
       'Test description',
       'MIT',
       self::TUI_ANSWER_NOTHING,
     ]);
 
-    $this->composerCreateProject(['--no-install' => TRUE]);
+    $this->runComposerCreateProject(['--no-install' => TRUE]);
 
-    $this->assertComposerCommandSuccessOutputContains('Welcome to the "yourorg/yourtempaltepackage" project customizer');
+    // Custom welcome message.
+    $this->assertComposerCommandSuccessOutputContains('Greetings from the customizer for the "yourorg/yourtempaltepackage" project',);
     $this->assertComposerCommandSuccessOutputContains('Project was customized');
 
-    $this->assertFixtureFiles();
+    $this->assertFixtureDirectoriesEqual();
   }
 
   #[RunInSeparateProcess]
-  #[Group('no-install')]
   public function testNoInstallSubDir(): void {
     // Move the command stub pre-created in setUp() to the 'src' directory.
-    $this->dirs->fs->mkdir($this->dirs->repo . DIRECTORY_SEPARATOR . 'src');
-    $this->dirs->fs->rename(
-      $this->dirs->repo . DIRECTORY_SEPARATOR . $this->customizerFile,
-      $this->dirs->repo . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . $this->customizerFile
+    $this->fs->mkdir(static::$repo . DIRECTORY_SEPARATOR . 'src');
+    $this->fs->rename(
+      static::$repo . DIRECTORY_SEPARATOR . 'CustomizeCommand.php',
+      static::$repo . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'CustomizeCommand.php'
     );
 
-    $json = CustomizeCommand::readComposerJson($this->dirs->repo . DIRECTORY_SEPARATOR . 'composer.json');
+    $json = CustomizeCommand::readComposerJson(static::$repo . DIRECTORY_SEPARATOR . 'composer.json');
     $json['autoload'] = is_array($json['autoload']) ? $json['autoload'] : [];
-    $json['autoload']['classmap'] = ['src/' . $this->customizerFile];
-    CustomizeCommand::writeComposerJson($this->dirs->repo . DIRECTORY_SEPARATOR . 'composer.json', $json);
+    $json['autoload']['classmap'] = ['src/CustomizeCommand.php'];
+    CustomizeCommand::writeComposerJson(static::$repo . DIRECTORY_SEPARATOR . 'composer.json', $json);
 
-    $this->customizerSetAnswers([
+    CustomizerTestCase::customizerSetAnswers([
       'testorg/testpackage',
       'Test description',
       'MIT',
       self::TUI_ANSWER_NOTHING,
     ]);
 
-    $this->composerCreateProject(['--no-install' => TRUE]);
+    $this->runComposerCreateProject(['--no-install' => TRUE]);
 
     $this->assertComposerCommandSuccessOutputContains('Welcome to the "yourorg/yourtempaltepackage" project customizer');
     $this->assertComposerCommandSuccessOutputContains('Project was customized');
 
-    $this->assertFixtureFiles();
+    $this->assertFixtureDirectoriesEqual();
   }
 
 }

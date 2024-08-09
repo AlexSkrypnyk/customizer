@@ -31,4 +31,9 @@
         <exclude-pattern>*.TestCase\.php</exclude-pattern>
         <exclude-pattern>*.test</exclude-pattern>
     </rule>
+
+    <!-- Allow missing class description names in test fixtures. -->
+    <rule ref="Drupal.Commenting.ClassComment.Short">
+        <exclude-pattern>tests/phpunit/Fixtures</exclude-pattern>
+    </rule>
 </ruleset>

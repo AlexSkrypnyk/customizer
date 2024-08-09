@@ -1,0 +1,10 @@
+{
+    "name": "testorg/testpackage",
+    "description": "Test description",
+    "type": "project",
+    "license": "MIT",
+    "require": {
+        "php": ">=8.2",
+        "monolog/monolog": "^2.0"
+    }
+}

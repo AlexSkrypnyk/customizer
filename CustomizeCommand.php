@@ -38,7 +38,7 @@ use Symfony\Component\Finder\Finder;
  * Please keep this link in your project to help others find this tool.
  * Thank you!
  *
- * @see https://github.com/alexSkrypnyk/customizer
+ * @see https://github.com/AlexSkrypnyk/customizer
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
@@ -71,7 +71,7 @@ class CustomizeCommand extends BaseCommand {
   public string $composerjson;
 
   /**
-   * Composer config data.
+   * Composer config data loaded before customization.
    *
    * @var array<string,mixed>
    */
@@ -112,6 +112,8 @@ class CustomizeCommand extends BaseCommand {
 
     if (empty($answers)) {
       $this->io->success($this->message('result_no_questions'));
+
+      $this->cleanupSelf();
 
       return 0;
     }
@@ -235,7 +237,7 @@ class CustomizeCommand extends BaseCommand {
       $should_proceed = $this->configClass::cleanup($this);
 
       if ($should_proceed === FALSE) {
-        $this->debug("Customizer's was cleanup skipped by the config class.");
+        $this->debug("Customizer's cleanup was skipped by the config class.");
 
         return;
       }
@@ -260,6 +262,13 @@ class CustomizeCommand extends BaseCommand {
     static::arrayUnsetDeep($json, ['require-dev', 'alexskrypnyk/customizer']);
     static::arrayUnsetDeep($json, ['autoload-dev', 'psr-4', 'AlexSkrypnyk\\Customizer\\Tests\\']);
     static::arrayUnsetDeep($json, ['config', 'allow-plugins', 'alexskrypnyk/customizer']);
+
+    // Remove the Customizer from the list of repositories if it was added as a
+    // local or overridden dependency.
+    // @todo Update to only remove if the package `url` path matches the current
+    // working directory.
+    static::arrayUnsetDeep($json, ['repositories']);
+    static::arrayUnsetDeep($json, ['minimum-stability']);
 
     // If the package data has changed, update the composer.json file.
     if (strcmp(serialize($this->composerjsonData), serialize($json)) !== 0) {
@@ -309,10 +318,12 @@ class CustomizeCommand extends BaseCommand {
    *   Message.
    */
   protected function message(string $name, array $tokens = []): string {
+    // Default messages from this class.
     $messages = static::messages($this);
 
-    if (!empty($this->configClass)) {
-      if (method_exists($this->configClass, 'messages') && !is_callable([$this->configClass, 'messages'])) {
+    // Messages from the config class if 'messages' method exists.
+    if (!empty($this->configClass) && method_exists($this->configClass, 'messages')) {
+      if (!is_callable([$this->configClass, 'messages'])) {
         throw new \RuntimeException(sprintf('Optional method `messages()` exists in the config class %s but is not callable', $this->configClass));
       }
       $messages = array_replace_recursive($messages, $this->configClass::messages($this));
@@ -673,7 +684,7 @@ class CustomizeCommand extends BaseCommand {
    */
   public static function messages(CustomizeCommand $c): array {
     return [
-      'title' => 'Welcome to {{ package.name }} project customizer',
+      'title' => 'Welcome to the "{{ package.name }}" project customizer',
       'header' => [
         'Please answer the following questions to customize your project.',
         'You will be able to review your answers before proceeding.',
