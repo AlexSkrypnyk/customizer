@@ -93,9 +93,9 @@ class CustomizerTestCase extends TestCase {
 
     $this->initLocations((string) getcwd());
 
-    // Projects using this project through a plugin must have this
-    // repository added to their composer.json to be able to download it
-    // during the test.
+    // Template project using the Customizer through a plugin must have this
+    // repository added to their `composer.json` during the test to be able to
+    // download it.
     $json = CustomizeCommand::readComposerJson(static::$repo . '/composer.json');
     $json['minimum-stability'] = 'dev';
     $json['repositories'] = [
@@ -118,6 +118,11 @@ class CustomizerTestCase extends TestCase {
    * Initialize the Composer command tester.
    */
   protected function initComposerTester(): void {
+    // @see https://github.com/composer/composer/issues/12107
+    if (!defined('STDIN')) {
+      define('STDIN', fopen('php://stdin', 'r'));
+    }
+
     $application = new Application();
     $application->setAutoExit(FALSE);
     $application->setCatchExceptions(FALSE);
@@ -130,8 +135,8 @@ class CustomizerTestCase extends TestCase {
     // Composer autoload uses per-project Composer binary, if the
     // `composer/composer` is included in the project as a dependency.
     //
-    // When the test runs and creates SUT, the Composer binary used is
-    // from the SUT's `vendor` directory. The Customizer may remove the
+    // When a test creates SUT, the Composer binary used is from the SUT's
+    // `vendor` directory. The Customizer may remove the
     // `vendor/composer/composer` directory as a part of the cleanup, resulting
     // in the Composer autoloader having an empty path to the Composer binary.
     //
@@ -195,11 +200,6 @@ class CustomizerTestCase extends TestCase {
     if (is_dir(static::$fixtures)) {
       $this->fs->mirror(static::$fixtures . DIRECTORY_SEPARATOR . 'base', static::$repo);
     }
-
-    // Create an empty command file in the 'system under test' to replicate a
-    // real scenario during test where the file is manually copied into a real
-    // project and then removed by the command after customization runs.
-    $this->fs->touch(static::$repo . DIRECTORY_SEPARATOR . 'CustomizeCommand.php');
 
     if ($cb !== NULL && is_callable($cb) && $cb instanceof \Closure) {
       // @phpstan-ignore-next-line
@@ -289,9 +289,10 @@ class CustomizerTestCase extends TestCase {
   protected function runComposerCreateProject(array $options = []): void {
     $defaults = [
       'command' => 'create-project',
-      'package' => $this->packageName,
       'directory' => static::$sut,
+      'package' => $this->packageName,
       'version' => '@dev',
+      // Use a fixture of the template repository as a source for the project.
       '--repository' => [
         json_encode([
           'type' => 'path',
@@ -373,8 +374,29 @@ class CustomizerTestCase extends TestCase {
   /**
    * Assert that fixtures directories are equal.
    */
-  protected function assertFixtureDirectoriesEqual(): void {
-    $this->assertDirectoriesEqual(static::$fixtures . DIRECTORY_SEPARATOR . 'expected', static::$sut);
+  protected function assertFixtureDirectoryEqualsSut(string $expected): void {
+    $this->assertDirectoriesEqual(static::$fixtures . DIRECTORY_SEPARATOR . $expected, static::$sut, static function (string $content, \SplFileInfo $file) : string {
+        // Remove compose.json overrides added by the static::setUp().
+      if ($file->getBasename() === 'composer.json') {
+        $data = json_decode($content, TRUE);
+        if (!is_array($data)) {
+          return $content;
+        }
+        unset($data['minimum-stability']);
+        if (isset($data['repositories'])) {
+          foreach ($data['repositories'] as $key => $repository) {
+            if ($repository['type'] === 'path' && $repository['url'] === static::$root) {
+              unset($data['repositories'][$key]);
+              if (empty($data['repositories'])) {
+                unset($data['repositories']);
+              }
+            }
+          }
+        }
+        $content = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . PHP_EOL;
+      }
+        return $content;
+    });
   }
 
   /**
@@ -417,15 +439,14 @@ class CustomizerTestCase extends TestCase {
    *   The first directory.
    * @param string $dir2
    *   The second directory.
-   *
-   * @throws \PHPUnit\Framework\AssertionFailedError
-   *   If the directories are not equal.
+   * @param callable|null $match_content
+   *   A callback to modify the content of the files before comparison.
    */
-  protected function assertDirectoriesEqual(string $dir1, string $dir2): void {
+  protected function assertDirectoriesEqual(string $dir1, string $dir2, ?callable $match_content = NULL): void {
     $rules_file = $dir1 . DIRECTORY_SEPARATOR . '.ignorecontent';
 
     // Initialize the rules arrays: skip, presence, include, and global.
-    $rules = ['skip' => ['.ignorecontent'], 'content' => [], 'include' => [], 'global' => []];
+    $rules = ['skip' => ['.ignorecontent'], 'ignore_content' => [], 'include' => [], 'global' => []];
 
     // Parse the .ignorecontent file.
     if (file_exists($rules_file)) {
@@ -444,7 +465,7 @@ class CustomizerTestCase extends TestCase {
           $rules['include'][] = $line[1] === '^' ? substr($line, 2) : substr($line, 1);
         }
         elseif ($line[0] === '^') {
-          $rules['content'][] = substr($line, 1);
+          $rules['ignore_content'][] = substr($line, 1);
         }
         elseif (!str_contains($line, DIRECTORY_SEPARATOR)) {
           // Treat patterns without slashes as global patterns.
@@ -476,7 +497,7 @@ class CustomizerTestCase extends TestCase {
     };
 
     // Get the files in the directories.
-    $get_files = static function (string $dir, array $rules, callable $match_path): array {
+    $get_files = static function (string $dir, array $rules, callable $match_path, ?callable $match_content): array {
       $files = [];
       $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($dir, \FilesystemIterator::SKIP_DOTS));
       foreach ($iterator as $file) {
@@ -510,21 +531,28 @@ class CustomizerTestCase extends TestCase {
           }
         }
 
-        $is_content = FALSE;
+        $is_ignore_content = FALSE;
         if (!$is_included) {
-          foreach ($rules['content'] as $pattern) {
+          foreach ($rules['ignore_content'] as $pattern) {
             if ($match_path($path, $pattern, $is_directory)) {
-              $is_content = TRUE;
+              $is_ignore_content = TRUE;
               break;
             }
           }
         }
 
-        if ($is_content) {
-          $files[$path] = 'content';
+        if ($is_ignore_content) {
+          $files[$path] = 'ignore_content';
+        }
+        elseif ($is_directory) {
+          $files[$path] = 'ignore_content';
         }
         else {
-          $files[$path] = $is_directory ? 'content' : md5_file($file->getPathname());
+          $content = file_get_contents($file->getPathname());
+          if (is_callable($match_content)) {
+            $content = $match_content($content, $file);
+          }
+          $files[$path] = md5($content);
         }
       }
       ksort($files);
@@ -532,8 +560,8 @@ class CustomizerTestCase extends TestCase {
       return $files;
     };
 
-    $dir1_files = $get_files($dir1, $rules, $match_path);
-    $dir2_files = $get_files($dir2, $rules, $match_path);
+    $dir1_files = $get_files($dir1, $rules, $match_path, $match_content);
+    $dir2_files = $get_files($dir2, $rules, $match_path, $match_content);
 
     // Allow updating the test fixtures.
     if (getenv('UPDATE_TEST_FIXTURES')) {
@@ -560,7 +588,7 @@ class CustomizerTestCase extends TestCase {
 
     // Compare files where content is not ignored.
     foreach ($dir1_files as $file => $hash) {
-      if (isset($dir2_files[$file]) && $hash !== $dir2_files[$file] && !in_array($file, $rules['content'])) {
+      if (isset($dir2_files[$file]) && $hash !== $dir2_files[$file] && !in_array($file, $rules['ignore_content'])) {
         $diffs['different_files'][] = $file;
       }
     }

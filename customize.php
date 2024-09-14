@@ -109,8 +109,7 @@ class Customize {
   /**
    * A callback to discover the `License` value from the environment.
    *
-   * This is an example callback, and it can be safely removed if this question
-   * is not needed.
+   * This is an example of discovery function as a class method.
    *
    * @param \AlexSkrypnyk\Customizer\CustomizeCommand $c
    *   The Customizer instance.

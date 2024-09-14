@@ -6,7 +6,6 @@ namespace AlexSkrypnyk\Customizer\Tests\Unit;
 
 use AlexSkrypnyk\Customizer\CustomizeCommand;
 use AlexSkrypnyk\Customizer\Tests\Functional\CustomizerTestCase;
-use AlexSkrypnyk\Customizer\Tests\Traits\ReflectionTrait;
 use PHPUnit\Framework\AssertionFailedError;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -24,8 +23,6 @@ use Symfony\Component\Filesystem\Filesystem;
 #[CoversClass(CustomizeCommand::class)]
 #[Group('unit')]
 class SelfTest extends CustomizerTestCase {
-
-  use ReflectionTrait;
 
   /**
    * {@inheritdoc}

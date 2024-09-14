@@ -6,5 +6,6 @@
     "require": {
         "php": ">=8.2",
         "monolog/monolog": "^2.0"
-    }
+    },
+    "homepage": "https://example.com"
 }

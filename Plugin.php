@@ -10,6 +10,8 @@ use Composer\EventDispatcher\EventSubscriberInterface;
 use Composer\Installer\PackageEvent;
 use Composer\Installer\PackageEvents;
 use Composer\IO\IOInterface;
+use Composer\Plugin\Capability\CommandProvider;
+use Composer\Plugin\Capable;
 use Composer\Plugin\PluginInterface;
 
 /**
@@ -22,7 +24,7 @@ use Composer\Plugin\PluginInterface;
  * `scripts['post-create-project-cmd']` explicitly, but this means that this
  * package can no longer be easily included in the project.
  */
-class Plugin implements PluginInterface, EventSubscriberInterface {
+class Plugin implements PluginInterface, EventSubscriberInterface, CommandProvider, Capable {
 
   /**
    * {@inheritdoc}
@@ -47,6 +49,24 @@ class Plugin implements PluginInterface, EventSubscriberInterface {
    * @codeCoverageIgnore
    */
   public function uninstall(Composer $composer, IOInterface $io) {
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getCapabilities(): array {
+    return [
+      CommandProvider::class => static::class,
+    ];
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getCommands(): array {
+    return [
+      new CustomizeCommand(),
+    ];
   }
 
   /**
