@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AlexSkrypnyk\Customizer\Tests\Functional;
+namespace AlexSkrypnyk\Customizer\Tests\Unit;
 
 use AlexSkrypnyk\Customizer\CustomizeCommand;
 use PHPUnit\Framework\Attributes\CoversClass;

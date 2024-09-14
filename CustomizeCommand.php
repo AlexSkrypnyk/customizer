@@ -17,28 +17,15 @@ use Symfony\Component\Finder\Finder;
 /**
  * Customize the project based on the answers provided by the user.
  *
+ * The Customizer allows template project authors to ask users questions during
+ * the `composer create-project` command and then update the newly created
+ * project based on the received answers.
+ *
  * This is a single-file Symfony Console Command class designed to work without
- * any additional dependencies (apart from dependencies provided by Composer)
- * during the `composer create-project` command ran with the `--no-install`.
- * It provides a way to ask questions and process answers to customize
- * user's project started from your scaffold project.
+ * any additional dependencies (apart from dependencies provided by Composer).
  *
- * It also supports passing answers as a JSON string via the `--answers` option
+ * It supports passing answers as a JSON string via the `--answers` option
  * or the `CUSTOMIZER_ANSWERS` environment variable.
- *
- * If you are a scaffold project maintainer, and want to allow customisations
- * to your user's project without installing dependencies, you would need
- * to copy this class to your project, adjust the namespace, and implement the
- * `questions()` method.
- *
- * If, however, you do not want to support `--no-install` mode, you should use
- * this project as a dev dependency of your scaffold project and simply provide
- * a configuration file with questions and processing callbacks.
- *
- * Please keep this link in your project to help others find this tool.
- * Thank you!
- *
- * @see https://github.com/AlexSkrypnyk/customizer
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
@@ -46,7 +33,7 @@ use Symfony\Component\Finder\Finder;
 class CustomizeCommand extends BaseCommand {
 
   /**
-   * Defines the file name for an optional external configuration file.
+   * Defines the file name for a configuration file.
    */
   const CONFIG_FILE = 'customize.php';
 
@@ -121,7 +108,7 @@ class CustomizeCommand extends BaseCommand {
     $this->io->definitionList(
       ['QUESTIONS' => 'ANSWERS'],
       new TableSeparator(),
-      ...array_map(static fn($q, $a): array => [$q => $a], array_keys($answers), array_column($answers, 'answer'))
+      ...array_map(static fn($q, $a): array => [$q => $a], array_keys($answers), array_values($answers))
     );
 
     if (!$this->io->confirm($this->message('proceed'))) {
@@ -145,7 +132,10 @@ class CustomizeCommand extends BaseCommand {
   }
 
   /**
-   * Collect, validate, ask questions and return the answers.
+   * Ask questions and return the answers.
+   *
+   * Before asking questions, the method will discover the answers from the
+   * environment and then ask the questions.
    *
    * @return array<string,string>
    *   The answers to the questions as an associative array:
@@ -231,6 +221,7 @@ class CustomizeCommand extends BaseCommand {
    */
   protected function cleanupSelf(): void {
     if (!empty($this->configClass)) {
+      // Check if the config class has a cleanup method.
       if (method_exists($this->configClass, 'cleanup') && !is_callable([$this->configClass, 'cleanup'])) {
         throw new \RuntimeException(sprintf('Optional method `cleanup()` exists in the config class %s but is not callable', $this->configClass));
       }
@@ -244,16 +235,6 @@ class CustomizeCommand extends BaseCommand {
     }
 
     $json = $this->readComposerJson($this->cwd . '/composer.json');
-
-    $is_dependency = (
-        !empty($json['require'])
-        && is_array($json['require'])
-        && isset($json['require']['alexskrypnyk/customizer'])
-      ) || (
-        !empty($json['require-dev'])
-        && is_array($json['require-dev'])
-        && isset($json['require-dev']['alexskrypnyk/customizer'])
-      );
 
     static::arrayUnsetDeep($json, ['autoload', 'classmap'], basename(__FILE__), FALSE);
     static::arrayUnsetDeep($json, ['scripts', 'customize']);
@@ -274,24 +255,10 @@ class CustomizeCommand extends BaseCommand {
     if (strcmp(serialize($this->composerjsonData), serialize($json)) !== 0) {
       $this->writeComposerJson($this->cwd . '/composer.json', $json);
 
-      // We can only update the composer.lock file if the Customizer was not run
-      // after the Composer dependencies were installed and the Customizer
-      // was not installed as a dependency because the files will be removed
-      // and this process will no longer have required dependencies.
-      // For a Customizer installed as a dependency, the user should run
-      // `composer update` manually (or through a plugin) after the Customizer
-      // is finished.
-      if ($this->isComposerDependenciesInstalled && !$is_dependency) {
+      if ($this->isComposerDependenciesInstalled) {
         $this->io->writeLn('Updating composer.lock file after customization.');
         static::passthru('composer update --quiet --no-interaction --no-progress');
       }
-    }
-
-    // Find and remove the command file.
-    $finder = static::finder($this->cwd)->files()->name(basename(__FILE__));
-    $file = iterator_to_array($finder->getIterator(), FALSE)[0] ?? NULL;
-    if ($file) {
-      $this->fs->remove($file->getRealPath());
     }
 
     // Find and remove the configuration file.
@@ -363,7 +330,7 @@ class CustomizeCommand extends BaseCommand {
 
     // Initialize the IO.
     //
-    // Convert the answers (if provided) to an input stream to be used for
+    // Convert the answers (if provided) to an input stream to be used for the
     // interactive prompts.
     $answers = getenv('CUSTOMIZER_ANSWERS');
     $answers = $answers ?: $input->getOption('answers');
@@ -431,12 +398,12 @@ class CustomizeCommand extends BaseCommand {
     return $class_name;
   }
 
-  // ============================================================================
+  // ===========================================================================
   // UTILITY METHODS
   //
   // Note that these methods are static and public so that they could be used
-  // in the configuration class as well.
-  // ============================================================================
+  // from within the configuration class as well.
+  // ===========================================================================
 
   /**
    * Run a command.
@@ -480,7 +447,7 @@ class CustomizeCommand extends BaseCommand {
    *   Finder instance.
    */
   public static function finder(string $dir, ?array $exclude = NULL): Finder {
-    $exclude = $exclude ?? ['.git', '.idea', 'vendor', 'node_modules'];
+    $exclude = $exclude ?? ['.git', '.idea', '.vscode', 'vendor', 'node_modules'];
 
     return Finder::create()->ignoreVCS(TRUE)->ignoreDotFiles(FALSE)->exclude($exclude)->in($dir);
   }
@@ -538,7 +505,7 @@ class CustomizeCommand extends BaseCommand {
    *   Replace a whole line or only the occurrence.
    * @param array<int,string>|null $exclude
    *   Directories to exclude.
-   *   Defaults to ['.git', '.idea', 'vendor', 'node_modules'].
+   *   Defaults to ['.git', '.idea', '.vscode', 'vendor', 'node_modules'].
    */
   public static function replaceInPath(string $path, string $search, string $replace, bool $replace_line = FALSE, ?array $exclude = NULL): void {
     $dir = dirname($path);
@@ -592,7 +559,7 @@ class CustomizeCommand extends BaseCommand {
    * @param string $end
    *   End marker.
    */
-  public static function replaceInPathBetween(string $path, string $search, string $replace, string $start, string $end): void {
+  public static function replaceInPathBetweenMarkers(string $path, string $search, string $replace, string $start, string $end): void {
     $search = empty($search) ? '.*' : preg_quote($search, '/');
     $replace = empty($replace) ? '$1' : preg_quote($replace, '/');
 

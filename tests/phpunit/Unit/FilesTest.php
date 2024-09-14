@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AlexSkrypnyk\Customizer\Tests\Functional;
+namespace AlexSkrypnyk\Customizer\Tests\Unit;
 
 use AlexSkrypnyk\Customizer\CustomizeCommand;
-use AlexSkrypnyk\Customizer\Tests\Traits\ReflectionTrait;
+use AlexSkrypnyk\Customizer\Tests\Functional\CustomizerTestCase;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
@@ -16,8 +16,6 @@ use PHPUnit\Framework\Attributes\Group;
 #[CoversClass(CustomizeCommand::class)]
 #[Group('unit')]
 class FilesTest extends CustomizerTestCase {
-
-  use ReflectionTrait;
 
   /**
    * {@inheritdoc}
@@ -223,11 +221,11 @@ class FilesTest extends CustomizerTestCase {
     ];
   }
 
-  #[DataProvider('dataProviderReplaceInPathBetween')]
-  public function testReplaceInPathBetween(string $path, array $before, string $search, string $replace, string $start, string $end, array $after): void {
+  #[DataProvider('dataProviderreplaceInPathBetweenMarkers')]
+  public function testreplaceInPathBetweenMarkers(string $path, array $before, string $search, string $replace, string $start, string $end, array $after): void {
     $this->createFileTree(static::$sut, $before);
 
-    CustomizeCommand::replaceInPathBetween(
+    CustomizeCommand::replaceInPathBetweenMarkers(
       static::$sut . DIRECTORY_SEPARATOR . $path,
       $search,
       $replace,
@@ -239,12 +237,12 @@ class FilesTest extends CustomizerTestCase {
   }
 
   /**
-   * Data provider for testReplaceInPathBetween.
+   * Data provider for testreplaceInPathBetweenMarkers.
    *
    * @return array
    *   The data.
    */
-  public static function dataProviderReplaceInPathBetween(): array {
+  public static function dataProviderreplaceInPathBetweenMarkers(): array {
     return [
       // Single file, only word, using file, substring.
       [
