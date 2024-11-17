@@ -382,7 +382,7 @@ passed to the processing callbacks:
 
 Question validation helpers are not provided in this class, but you can easily
 create them using custom regular expression or add them from the
-[AlexSkrypnyk/str2name](https://github.com/AlexSkrypnyk/str2name) package.
+[AlexSkrypnyk/str2name](https://github.com/AlexSkrypnyk/Str2Name) package.
 
 ## Developing and testing your questions
 
@@ -403,11 +403,11 @@ Repeat the process as many times as needed to test your questions and processing
 logic.
 
 Add `export COMPOSER_ALLOW_XDEBUG=1` before running the `composer create-project`
-command to enable debugging with XDebug.
+command to enable debugging with XDebug when running Composer commands.
 
 ### Automated functional tests
 
-The Customizer provides a [test harness]](tests/phpunit/Functional) to help you
+The Customizer provides a [test harness](tests/phpunit/Functional) to help you
 test your questions and processing with ease.
 
 The template project authors can use the same test harness to test their own
@@ -422,7 +422,7 @@ questions and processing logic:
 4. Add tests as _base_/_expected_ directory structures and assert for the
    expected results.
 
-See examples within the [template project example](https://github.com/AlexSkrypnyk/template-project-example/blob/main/tests/).
+See examples within the [template project example](https://github.com/AlexSkrypnyk/template-project-example/blob/main/tests/phpunit).
 
 ### Comparing fixture directories
 
