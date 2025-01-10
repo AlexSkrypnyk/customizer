@@ -26,9 +26,6 @@ use Symfony\Component\Finder\Finder;
  *
  * It supports passing answers as a JSON string via the `--answers` option
  * or the `CUSTOMIZER_ANSWERS` environment variable.
- *
- * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
- * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  */
 class CustomizeCommand extends BaseCommand {
 
@@ -60,7 +57,7 @@ class CustomizeCommand extends BaseCommand {
   /**
    * Composer config data loaded before customization.
    *
-   * @var array<string,mixed>
+   * @var array<int|string,mixed>
    */
   public array $composerjsonData;
 
@@ -141,9 +138,6 @@ class CustomizeCommand extends BaseCommand {
    *   The answers to the questions as an associative array:
    *   - key: The question key.
    *   - value: The answer to the question.
-   *
-   * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-   * @SuppressWarnings(PHPMD.NPathComplexity)
    */
   protected function askQuestions(): array {
     $answers = [];
@@ -216,8 +210,6 @@ class CustomizeCommand extends BaseCommand {
 
   /**
    * Cleanup after customization.
-   *
-   * @SuppressWarnings(PHPMD.CyclomaticComplexity)
    */
   protected function cleanupSelf(): void {
     if (!empty($this->configClass)) {
@@ -332,26 +324,42 @@ class CustomizeCommand extends BaseCommand {
     //
     // Convert the answers (if provided) to an input stream to be used for the
     // interactive prompts.
-    $answers = getenv('CUSTOMIZER_ANSWERS');
-    $answers = $answers ?: $input->getOption('answers');
+    $answers = getenv('CUSTOMIZER_ANSWERS') ?: $input->getOption('answers');
     if ($answers && is_string($answers)) {
       $answers = json_decode($answers, TRUE);
 
-      if (is_array($answers)) {
-        $stream = fopen('php://memory', 'r+');
-        if ($stream === FALSE) {
+      if (!is_array($answers)) {
+        // @codeCoverageIgnoreStart
+        throw new \InvalidArgumentException('Answers must be a JSON string');
+        // @codeCoverageIgnoreEnd
+      }
+
+      $answers = array_map(function ($answer): string {
+        if (!is_scalar($answer) && !is_null($answer)) {
           // @codeCoverageIgnoreStart
-          throw new \RuntimeException('Failed to open memory stream');
+          throw new \InvalidArgumentException('Answer must be a scalar value');
           // @codeCoverageIgnoreEnd
         }
-        foreach ($answers as $answer) {
-          fwrite($stream, $answer . \PHP_EOL);
-        }
-        rewind($stream);
 
-        $input = new ArgvInput($answers);
-        $input->setStream($stream);
+        return strval($answer);
+      }, $answers);
+      $answers = array_values($answers);
+
+      $stream = fopen('php://memory', 'r+');
+      if ($stream === FALSE) {
+        // @codeCoverageIgnoreStart
+        throw new \RuntimeException('Failed to open memory stream');
+        // @codeCoverageIgnoreEnd
       }
+
+      foreach ($answers as $answer) {
+        fwrite($stream, $answer . \PHP_EOL);
+      }
+
+      rewind($stream);
+
+      $input = new ArgvInput($answers);
+      $input->setStream($stream);
     }
 
     $this->io = new SymfonyStyle($input, $output);
@@ -457,7 +465,7 @@ class CustomizeCommand extends BaseCommand {
    *
    * This is a helper method to be used in processing callbacks.
    *
-   * @return array <string,mixed>
+   * @return array<int|string, mixed>
    *   Composer.json data as an associative array.
    */
   public static function readComposerJson(string $file): array {
@@ -591,8 +599,6 @@ class CustomizeCommand extends BaseCommand {
    *   Value to unset. If NULL, the whole key will be unset.
    * @param bool $exact
    *   Match value exactly or by substring.
-   *
-   * @SuppressWarnings(PHPMD.CyclomaticComplexity)
    */
   public static function arrayUnsetDeep(array &$array, array $path, ?string $value = NULL, bool $exact = TRUE): void {
     $key = array_shift($path);
@@ -611,6 +617,8 @@ class CustomizeCommand extends BaseCommand {
         if ($value !== NULL) {
           if (is_array($array[$key])) {
             $array[$key] = array_filter($array[$key], static function ($item) use ($value, $exact): bool {
+              $item = is_scalar($item) ? strval($item) : '';
+
               return $exact ? $item !== $value : !str_contains($item, $value);
             });
             if (count(array_filter(array_keys($array[$key]), 'is_int')) === count($array[$key])) {
@@ -646,8 +654,6 @@ class CustomizeCommand extends BaseCommand {
    * @return array<string, array<int, string>|string>
    *   An associative array of messages with message name as key and the message
    *   test as a string or an array of strings.
-   *
-   * @SuppressWarnings(PHPMD.UnusedFormalParameter)
    */
   public static function messages(CustomizeCommand $c): array {
     return [
@@ -692,8 +698,6 @@ class CustomizeCommand extends BaseCommand {
    *     be passed to the question callback. The callback receives the following
    *     arguments:
    *     - command: The CustomizeCommand object.
-   *
-   * @SuppressWarnings(PHPMD.UnusedFormalParameter)
    */
   public static function questions(CustomizeCommand $c): array {
     return [];
@@ -710,8 +714,6 @@ class CustomizeCommand extends BaseCommand {
    *   Gathered answers.
    * @param CustomizeCommand $c
    *   The CustomizeCommand object.
-   *
-   * @SuppressWarnings(PHPMD.UnusedFormalParameter)
    */
   public static function process(array $answers, CustomizeCommand $c): void {
 
@@ -737,8 +739,6 @@ class CustomizeCommand extends BaseCommand {
    * @return bool
    *   Return FALSE to skip the further self-cleanup. Returning TRUE will
    *   proceed with the self-cleanup.
-   *
-   * @SuppressWarnings(PHPMD.UnusedFormalParameter)
    */
   public static function cleanup(CustomizeCommand $c): bool {
     return TRUE;

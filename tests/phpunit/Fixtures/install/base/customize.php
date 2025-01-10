@@ -8,8 +8,6 @@ use AlexSkrypnyk\Customizer\CustomizeCommand;
  * Customizer configuration.
  *
  * phpcs:disable Drupal.Classes.ClassFileName.NoMatch
- *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class Customize {
 

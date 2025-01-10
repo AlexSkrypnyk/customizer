@@ -168,8 +168,6 @@ use AlexSkrypnyk\Customizer\CustomizeCommand;
  * Example configuration for the Customizer command.
  *
  * phpcs:disable Drupal.Classes.ClassFileName.NoMatch
- *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class Customize {
 
@@ -200,9 +198,6 @@ class Customize {
    *     be passed to the question callback. The callback receives the following
    *     arguments:
    *     - command: The CustomizeCommand object.
-   *
-   * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-   * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
    */
   public static function questions(CustomizeCommand $c): array {
     // This an example of questions that can be asked to customize the project.
@@ -343,8 +338,6 @@ class Customize {
    * @return array<string,string|array<string>>
    *   An associative array of messages with message name as key and the message
    *   test as a string or an array of strings.
-   *
-   * @SuppressWarnings(PHPMD.UnusedFormalParameter)
    */
   public static function messages(CustomizeCommand $c): array {
     return [
