@@ -1,23 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/11.1/phpunit.xsd"
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/11.4/phpunit.xsd"
          bootstrap="vendor/autoload.php"
          cacheDirectory=".phpunit.cache"
          executionOrder="depends,defects"
-         requireCoverageMetadata="false"
+         requireCoverageMetadata="true"
          beStrictAboutCoverageMetadata="false"
          beStrictAboutOutputDuringTests="true"
          failOnRisky="true"
          failOnWarning="true"
          displayDetailsOnTestsThatTriggerWarnings="true"
          displayDetailsOnTestsThatTriggerErrors="true"
-         displayDetailsOnTestsThatTriggerNotices="true">
-    <testsuites>
+         displayDetailsOnTestsThatTriggerNotices="true"
+         displayDetailsOnTestsThatTriggerDeprecations="true"
+         displayDetailsOnPhpunitDeprecations="true">
+<testsuites>
         <testsuite name="default">
             <directory>tests/phpunit</directory>
         </testsuite>
     </testsuites>
-
     <source restrictNotices="true"
             restrictWarnings="true"
             ignoreIndirectDeprecations="true">
@@ -26,18 +26,15 @@
             <file>Plugin.php</file>
         </include>
         <exclude>
-            <directory>tests/phpunit</directory>
+            <directory>tests</directory>
         </exclude>
     </source>
-
-    <coverage
-        includeUncoveredFiles="true"
-        pathCoverage="false"
-        ignoreDeprecatedCodeUnits="true"
-        disableCodeCoverageIgnore="false">
+    <coverage pathCoverage="false"
+              ignoreDeprecatedCodeUnits="true"
+              disableCodeCoverageIgnore="false">
         <report>
             <html outputDirectory=".coverage-html" lowUpperBound="50" highLowerBound="90"/>
-            <cobertura outputFile=".coverage-html/cobertura.xml"/>
+            <cobertura outputFile="cobertura.xml"/>
         </report>
     </coverage>
 </phpunit>

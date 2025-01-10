@@ -43,8 +43,6 @@ class FilesTest extends CustomizerTestCase {
    *
    * @return array
    *   The data.
-   *
-   * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
    */
   public static function dataProviderReplaceInPath(): array {
     return [

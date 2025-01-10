@@ -26,10 +26,9 @@
         "drupal/coder": "^8.3",
         "ergebnis/composer-normalize": "^2.42",
         "phpcompatibility/php-compatibility": "^9.3",
-        "phpmd/phpmd": "^2.15",
-        "phpstan/phpstan": "^1.10",
+        "phpstan/phpstan": "^2",
         "phpunit/phpunit": "^11.1",
-        "rector/rector": "^1.0"
+        "rector/rector": "^2"
     },
     "minimum-stability": "dev",
     "prefer-stable": true,
@@ -62,7 +61,6 @@
         ],
         "lint": [
             "phpcs",
-            "phpmd --exclude vendor . text phpmd.xml",
             "phpstan",
             "rector --clear-cache --dry-run"
         ],

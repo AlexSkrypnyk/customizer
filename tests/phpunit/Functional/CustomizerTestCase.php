@@ -126,9 +126,7 @@ class CustomizerTestCase extends TestCase {
     $application = new Application();
     $application->setAutoExit(FALSE);
     $application->setCatchExceptions(FALSE);
-    if (method_exists($application, 'setCatchErrors')) {
-      $application->setCatchErrors(FALSE);
-    }
+    $application->setCatchErrors(FALSE);
 
     $this->tester = new ApplicationTester($application);
 
@@ -201,8 +199,7 @@ class CustomizerTestCase extends TestCase {
       $this->fs->mirror(static::$fixtures . DIRECTORY_SEPARATOR . 'base', static::$repo);
     }
 
-    if ($cb !== NULL && is_callable($cb) && $cb instanceof \Closure) {
-      // @phpstan-ignore-next-line
+    if ($cb !== NULL && $cb instanceof \Closure) {
       \Closure::bind($cb, $this, self::class)();
     }
   }
@@ -337,12 +334,21 @@ class CustomizerTestCase extends TestCase {
     if (!is_array($data)) {
       $this->fail('The actual file is not a valid JSON file.');
     }
+
     unset($data['minimum-stability']);
+
+    if (!is_array($data['repositories'])) {
+      $this->fail('The actual file does not contain the repositories section.');
+    }
     foreach ($data['repositories'] as $key => $repository) {
-      if ($repository['type'] === 'path' && $repository['url'] === static::$root) {
+      if (!is_array($repository)) {
+        $this->fail('The actual file contains an invalid repository entry.');
+      }
+      if (array_key_exists('type', $repository) && $repository['type'] === 'path' && array_key_exists('url', $repository) && $repository['url'] === static::$root) {
         unset($data['repositories'][$key]);
       }
     }
+
     if (empty($data['repositories'])) {
       unset($data['repositories']);
     }
@@ -375,8 +381,8 @@ class CustomizerTestCase extends TestCase {
    * Assert that fixtures directories are equal.
    */
   protected function assertFixtureDirectoryEqualsSut(string $expected): void {
-    $this->assertDirectoriesEqual(static::$fixtures . DIRECTORY_SEPARATOR . $expected, static::$sut, static function (string $content, \SplFileInfo $file) : string {
-        // Remove compose.json overrides added by the static::setUp().
+    $this->assertDirectoriesEqual(static::$fixtures . DIRECTORY_SEPARATOR . $expected, static::$sut, static function (string $content, \SplFileInfo $file): string {
+      // Remove compose.json overrides added by the static::setUp().
       if ($file->getBasename() === 'composer.json') {
         $data = json_decode($content, TRUE);
         if (!is_array($data)) {
@@ -384,8 +390,16 @@ class CustomizerTestCase extends TestCase {
         }
         unset($data['minimum-stability']);
         if (isset($data['repositories'])) {
+          if (!is_array($data['repositories'])) {
+            return $content;
+          }
+
           foreach ($data['repositories'] as $key => $repository) {
-            if ($repository['type'] === 'path' && $repository['url'] === static::$root) {
+            if (!is_array($repository)) {
+              return $content;
+            }
+
+            if (array_key_exists('type', $repository) && $repository['type'] === 'path' && array_key_exists('url', $repository) && $repository['url'] === static::$root) {
               unset($data['repositories'][$key]);
               if (empty($data['repositories'])) {
                 unset($data['repositories']);
@@ -395,7 +409,8 @@ class CustomizerTestCase extends TestCase {
         }
         $content = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . PHP_EOL;
       }
-        return $content;
+
+      return $content;
     });
   }
 
@@ -621,6 +636,7 @@ class CustomizerTestCase extends TestCase {
       throw new AssertionFailedError($message);
     }
 
+    // @phpstan-ignore-next-line
     $this->assertTrue(TRUE);
   }
 

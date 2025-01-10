@@ -6,8 +6,6 @@
  *
  * Usage:
  * ./vendor/bin/rector process .
- *
- * @see https://github.com/palantirnet/drupal-rector/blob/main/rector.php
  */
 
 declare(strict_types=1);
@@ -19,30 +17,32 @@ use Rector\CodingStyle\Rector\FuncCall\CountArrayToEmptyArrayComparisonRector;
 use Rector\CodingStyle\Rector\Stmt\NewlineAfterStatementRector;
 use Rector\Config\RectorConfig;
 use Rector\DeadCode\Rector\If_\RemoveAlwaysTrueIfConditionRector;
+use Rector\PHPUnit\Set\PHPUnitSetList;
 use Rector\Set\ValueObject\SetList;
 use Rector\Strict\Rector\Empty_\DisallowedEmptyRuleFixerRector;
 use Rector\TypeDeclaration\Rector\StmtsAwareInterface\DeclareStrictTypesRector;
 
-return static function (RectorConfig $rectorConfig): void {
-  $rectorConfig->paths([
+return static function (RectorConfig $config): void {
+  $config->paths([
     __DIR__ . '/CustomizeCommand.php',
     __DIR__ . '/Plugin.php',
     __DIR__ . '/customize.php',
     __DIR__ . '/tests/phpunit',
   ]);
 
-  $rectorConfig->sets([
+  $config->sets([
     SetList::PHP_82,
     SetList::CODE_QUALITY,
     SetList::CODING_STYLE,
     SetList::DEAD_CODE,
     SetList::INSTANCEOF,
     SetList::TYPE_DECLARATION,
+    PHPUnitSetList::PHPUNIT_100,
   ]);
 
-  $rectorConfig->rule(DeclareStrictTypesRector::class);
+  $config->rule(DeclareStrictTypesRector::class);
 
-  $rectorConfig->skip([
+  $config->skip([
     // Rules added by Rector's rule sets.
     CountArrayToEmptyArrayComparisonRector::class,
     DisallowedEmptyRuleFixerRector::class,
@@ -56,11 +56,11 @@ return static function (RectorConfig $rectorConfig): void {
     '*/node_modules/*',
   ]);
 
-  $rectorConfig->fileExtensions([
+  $config->fileExtensions([
     'php',
     'inc',
   ]);
 
-  $rectorConfig->importNames(TRUE, FALSE);
-  $rectorConfig->importShortClasses(FALSE);
+  $config->importNames(TRUE, FALSE);
+  $config->importShortClasses(FALSE);
 };
