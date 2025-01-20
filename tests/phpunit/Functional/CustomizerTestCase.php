@@ -209,7 +209,7 @@ class CustomizerTestCase extends TestCase {
    */
   protected function tearDown(): void {
     // Clean up the directories if the test passed.
-    if (!$this->status() instanceof Failure && !$this->status() instanceof Error) {
+    if (!$this->status() instanceof Failure && !$this->status() instanceof Error && isset($this->fs)) {
       $this->fs->remove(static::$build);
     }
 
