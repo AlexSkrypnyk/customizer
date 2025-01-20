@@ -64,7 +64,18 @@ class SelfTest extends CustomizerTestCase {
       'files_not_equal' => [
         [
           'dir1' => [
+            'd32f2_symlink_deep.txt',
+            'dir1_flat/d1f1_symlink.txt',
             'dir1_flat/d1f3-only-src.txt',
+            'dir3_subdirs/dir32-unignored/d32f1_symlink.txt',
+            'dir3_subdirs_symlink/d3f1-ignored.txt',
+            'dir3_subdirs_symlink/d3f2-ignored.txt',
+            'dir3_subdirs_symlink/dir31/d31f1-ignored.txt',
+            'dir3_subdirs_symlink/dir31/d31f2-ignored.txt',
+            'dir3_subdirs_symlink/dir32-unignored/d32f1.txt',
+            'dir3_subdirs_symlink/dir32-unignored/d32f1_symlink.txt',
+            'dir3_subdirs_symlink/dir32-unignored/d32f2.txt',
+            'f2_symlink.txt',
           ],
           'dir2' => [
             'dir2_flat-present-dst/d2f1.txt',

@@ -1,0 +1,64 @@
+{
+    "name": "testorg/testpackage",
+    "description": "Test description",
+    "license": "MIT",
+    "type": "composer-plugin",
+    "authors": [
+        {
+            "name": "Alex Skrypnyk",
+            "email": "alex@drevops.com",
+            "homepage": "https://alexskrypnyk.com",
+            "role": "Maintainer"
+        }
+    ],
+    "homepage": "https://github.com/alexskrypnyk/customizer",
+    "support": {
+        "issues": "https://github.com/alexskrypnyk/customizer/issues",
+        "source": "https://github.com/alexskrypnyk/customizer"
+    },
+    "require": {
+        "php": ">=8.2",
+        "composer-plugin-api": "^2.0"
+    },
+    "require-dev": {
+        "composer/composer": "^2.7",
+        "dealerdirect/phpcodesniffer-composer-installer": "^1.0",
+        "drupal/coder": "^8.3",
+        "ergebnis/composer-normalize": "^2.42",
+        "phpcompatibility/php-compatibility": "^9.3",
+        "phpstan/phpstan": "^2",
+        "phpunit/phpunit": "^11.1",
+        "rector/rector": "^2"
+    },
+    "prefer-stable": true,
+    "autoload": {
+        "psr-4": {
+            "AlexSkrypnyk\\Customizer\\": ""
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "dealerdirect/phpcodesniffer-composer-installer": true,
+            "ergebnis/composer-normalize": true
+        },
+        "sort-packages": true
+    },
+    "extra": {
+        "class": "AlexSkrypnyk\\Customizer\\Plugin",
+        "customizer": true
+    },
+    "scripts": {
+        "lint": [
+            "phpcs",
+            "phpstan",
+            "rector --clear-cache --dry-run"
+        ],
+        "lint-fix": [
+            "rector --clear-cache",
+            "phpcbf"
+        ],
+        "reset": "rm -Rf vendor vendor-bin composer.lock",
+        "test": "phpunit --no-coverage",
+        "test-coverage": "phpunit"
+    }
+}

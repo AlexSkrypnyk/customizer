@@ -19,13 +19,13 @@ use Symfony\Component\Process\Process;
  * Base class for functional tests.
  *
  * This class is intended to be distributed with the Customizer package and
- * used in consumer site's tests to allow easy testing of the integrated
+ * used in consumer package's tests to allow easy testing of the integrated
  * Customizer command.
  *
  * Extend this class in your test case to get access to the Customizer command
  * test runner and the necessary helper methods.
  */
-class CustomizerTestCase extends TestCase {
+abstract class CustomizerTestCase extends TestCase {
 
   /**
    * TUI answer to indicate that the user did not provide any input.
@@ -193,10 +193,29 @@ class CustomizerTestCase extends TestCase {
       static::$fixtures .= DIRECTORY_SEPARATOR . $this->dataName();
     }
 
-    // Copy the 'base' fixture files to the repository if they were provided for
-    // this test.
+    // Copy the 'base' fixture to the 'local' fixture.
     if (is_dir(static::$fixtures)) {
-      $this->fs->mirror(static::$fixtures . DIRECTORY_SEPARATOR . 'base', static::$repo);
+      $base_dir = static::$fixtures . DIRECTORY_SEPARATOR . 'base';
+
+      // Use this project's root directory as a base directory if the 'base'
+      // fixture was not provided. This allows to use the current project's
+      // files as a 'base' for the test.
+      //
+      // @note Composer uses .gitattributes to determine which files to include
+      // in the package when running `create-project`, so add the files that are
+      // not intended to be used in the consumer to the .gitattributes file
+      // of this project.
+      $allowed_files = [];
+      if (!is_dir($base_dir)) {
+        $base_dir = static::$root;
+        // Only use the git-tracked files to replicate a "clean" project as it
+        // would be seen by Composer at the code repository.
+        // Make sure to commit the changes locally before running
+        // the tests (even as a temporary commit).
+        $allowed_files = $this->getTrackedFiles($base_dir);
+      }
+
+      $this->mirrorFiltered($base_dir, static::$repo, $allowed_files);
     }
 
     if ($cb !== NULL && $cb instanceof \Closure) {
@@ -300,6 +319,87 @@ class CustomizerTestCase extends TestCase {
     ];
 
     $this->tester->run($options + $defaults);
+  }
+
+  /**
+   * Get the tracked files in a Git repository.
+   *
+   * @param string $dir
+   *   The directory to check.
+   *
+   * @return array<string>
+   *   The list of tracked files.
+   *
+   * @throws \RuntimeException
+   *   If the directory is not a Git repository.
+   */
+  protected function getTrackedFiles(string $dir): array {
+    if (!is_dir($dir . '/.git')) {
+      throw new \RuntimeException("The directory is not a Git repository.");
+    }
+
+    $tracked_files = [];
+    $output = [];
+    $code = 0;
+    exec(sprintf('git --git-dir=%s --work-tree=%s ls-files', escapeshellarg($dir . '/.git'), escapeshellarg($dir)), $output, $code);
+    if ($code !== 0) {
+      throw new \RuntimeException("Failed to retrieve tracked files using git ls-files.");
+    }
+
+    foreach ($output as $file) {
+      $tracked_files[] = $dir . DIRECTORY_SEPARATOR . $file;
+    }
+
+    return $tracked_files;
+  }
+
+  /**
+   * Mirror a directory with filtering.
+   *
+   * @param string $src
+   *   The source directory.
+   * @param string $dst
+   *   The destination directory.
+   * @param array<string> $allowed_files
+   *   The list of allowed files.
+   */
+  protected function mirrorFiltered(string $src, string $dst, array $allowed_files = []): void {
+    $files = new \RecursiveIteratorIterator(
+      new \RecursiveDirectoryIterator($src, \FilesystemIterator::SKIP_DOTS | \FilesystemIterator::FOLLOW_SYMLINKS),
+    );
+
+    foreach ($files as $file) {
+      if (!$file instanceof \SplFileInfo) {
+        continue;
+      }
+
+      if (!empty($allowed_files) && !in_array($file->getPathname(), $allowed_files, TRUE)) {
+        continue;
+      }
+
+      $relative_path = substr($file->getPathname(), strlen($src) + 1);
+      $target_path = $dst . DIRECTORY_SEPARATOR . $relative_path;
+
+      if (!is_dir(dirname($target_path))) {
+        mkdir(dirname($target_path), 0755, TRUE);
+      }
+
+      // Always copy the contents of the file as a regular file.
+      if (is_link($file->getPathname())) {
+        // Resolve the symlink to the actual file content.
+        $resolved_path = realpath($file->getPathname());
+        if ($resolved_path !== FALSE) {
+          copy($resolved_path, $target_path);
+        }
+        else {
+          throw new \RuntimeException("Failed to resolve symlink for: " . $file->getPathname());
+        }
+      }
+      else {
+        // Copy regular files.
+        copy($file->getPathname(), $target_path);
+      }
+    }
   }
 
   /**
@@ -500,6 +600,7 @@ class CustomizerTestCase extends TestCase {
       if (str_ends_with($pattern, DIRECTORY_SEPARATOR)) {
         return str_starts_with($path, rtrim($pattern, DIRECTORY_SEPARATOR));
       }
+
       // Match direct children (e.g., "dir/*").
       if (str_contains($pattern, '/*')) {
         $parent_dir = rtrim($pattern, '/*') . DIRECTORY_SEPARATOR;
@@ -514,7 +615,7 @@ class CustomizerTestCase extends TestCase {
     // Get the files in the directories.
     $get_files = static function (string $dir, array $rules, callable $match_path, ?callable $match_content): array {
       $files = [];
-      $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($dir, \FilesystemIterator::SKIP_DOTS));
+      $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($dir, \FilesystemIterator::SKIP_DOTS | \FilesystemIterator::FOLLOW_SYMLINKS));
       foreach ($iterator as $file) {
         if (!$file instanceof \SplFileInfo) {
           continue;
