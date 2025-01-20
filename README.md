@@ -46,7 +46,7 @@ composer create-project alexskrypnyk/template-project-example my-project
 1. Add to the template project as a Composer dependency:
 ```json
 "require-dev": {
-    "alexskrypnyk/customizer": "^1.0"
+    "alexskrypnyk/customizer": "^0.5"
 },
 "config": {
     "allow-plugins": {
