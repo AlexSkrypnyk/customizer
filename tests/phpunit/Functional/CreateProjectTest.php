@@ -42,6 +42,33 @@ class CreateProjectTest extends CustomizerTestCase {
     $this->assertComposerLockUpToDate();
   }
 
+  /**
+   * Assert that fixtures without 'base' use the current directory as the base.
+   */
+  #[Group('install')]
+  public function testInstallNoBase(): void {
+    static::customizerSetAnswers([
+      'testorg/testpackage',
+      'Test description',
+      'MIT',
+      self::TUI_ANSWER_NOTHING,
+    ]);
+
+    $this->runComposerCreateProject();
+
+    $this->assertComposerCommandSuccessOutputContains('Welcome to the "alexskrypnyk/customizer" project customizer');
+    $this->assertComposerCommandSuccessOutputContains('Name');
+    $this->assertComposerCommandSuccessOutputContains('testorg/testpackage');
+    $this->assertComposerCommandSuccessOutputContains('Description');
+    $this->assertComposerCommandSuccessOutputContains('Test description');
+    $this->assertComposerCommandSuccessOutputContains('License');
+    $this->assertComposerCommandSuccessOutputContains('MIT');
+    $this->assertComposerCommandSuccessOutputContains('Project was customized');
+
+    $this->assertFixtureDirectoryEqualsSut('post_install');
+    $this->assertComposerLockUpToDate();
+  }
+
   #[RunInSeparateProcess]
   #[Group('install')]
   public function testInstallAdditionalCleanup(): void {

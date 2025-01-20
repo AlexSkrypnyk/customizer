@@ -220,7 +220,7 @@ class FilesTest extends CustomizerTestCase {
   }
 
   #[DataProvider('dataProviderreplaceInPathBetweenMarkers')]
-  public function testreplaceInPathBetweenMarkers(string $path, array $before, string $search, string $replace, string $start, string $end, array $after): void {
+  public function testReplaceInPathBetweenMarkers(string $path, array $before, string $search, string $replace, string $start, string $end, array $after): void {
     $this->createFileTree(static::$sut, $before);
 
     CustomizeCommand::replaceInPathBetweenMarkers(
@@ -235,7 +235,7 @@ class FilesTest extends CustomizerTestCase {
   }
 
   /**
-   * Data provider for testreplaceInPathBetweenMarkers.
+   * Data provider for testReplaceInPathBetweenMarkers.
    *
    * @return array
    *   The data.

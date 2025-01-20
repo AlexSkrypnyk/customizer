@@ -1,0 +1,8 @@
+vendor/
+^composer.lock
+# Ignore the contents of these 2 Customizer's own files which will not exist in
+# the template project. We cannot symink them, because PHPUnit excludes the real
+# files from coverage.
+^CustomizeCommand.php
+^Plugin.php
+^tests/phpunit/Functional/CustomizerTestCase.php
