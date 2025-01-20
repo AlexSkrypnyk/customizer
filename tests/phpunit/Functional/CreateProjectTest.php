@@ -18,7 +18,6 @@ class CreateProjectTest extends CustomizerTestCase {
 
   #[RunInSeparateProcess]
   #[Group('install')]
-  #[Group('wip1')]
   public function testInstall(): void {
     static::customizerSetAnswers([
       'testorg/testpackage',
