@@ -400,19 +400,26 @@ command to enable debugging with XDebug when running Composer commands.
 
 ### Automated functional tests
 
-The Customizer provides a [test harness](tests/phpunit/Functional) to help you
-test your questions and processing with ease.
+The Customizer provides a [test harness](tests/phpunit/Functional) to help you, as a template project
+author, to test the questions and processing with ease.
 
-The template project authors can use the same test harness to test their own
-questions and processing logic:
-
+To use the test harness:
 1. Setup PHPUnit in your template project to run tests.
-2. Inherit your classes from [`CustomizerTestCase.php`](tests/phpunit/Functional/CustomizerTestCase.php) (this file is
+2. Inherit your test classes from [`CustomizerTestCase.php`](tests/phpunit/Functional/CustomizerTestCase.php) (this file is
    included into distribution when you add Customizer to your template project).
-3. Create a directory in your project with the name `tests/phpunit/Fixtures/<name_of_test_snake_case>`
+3. Add path to `CustomizerTestCase.php` into the `autoload-dev` section of your
+   template project's `composer.json` file:
+   ```json
+    "autoload-dev": {
+        "psr-4": {
+            "AlexSkrypnyk\\Customizer\\Tests\\": "vendor/alexskrypnyk/customizer/tests/phpunit"
+        }
+    },
+   ```
+4. Create a directory in your project with the name `tests/phpunit/Fixtures/<name_of_test_snake_case>`
    and place your test fixtures there. If you use data providers, you can
    create a sub-directory with the name of the data set within the provider.
-4. Add tests as _base_/_expected_ directory structures and assert for the
+5. Add tests as _base_/_expected_ directory structures and assert for the
    expected results.
 
 See examples within the [template project example](https://github.com/AlexSkrypnyk/template-project-example/blob/main/tests/phpunit).
@@ -434,7 +441,8 @@ specify the list of files to ignore during the comparison using
 `.gitignore`-like syntax with the addition to ignore content changes but still
 assess the file presence.
 
-See the description in `assertFixtureDirectoryEqualsSut()` for more information.
+See the description in `CustomizerTestCase::assertDirectoriesEqual()` for more
+information about the comparison process.
 
 ## Maintenance
 
