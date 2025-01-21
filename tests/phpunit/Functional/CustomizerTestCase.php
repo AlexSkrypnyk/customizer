@@ -684,9 +684,9 @@ abstract class CustomizerTestCase extends TestCase {
       $allowed_files = array_keys($dir2_files);
       $finder = new Finder();
       $finder->files()->in($dir2)->filter(static function (\SplFileInfo $file) use ($allowed_files, $dir2): bool {
-        $relativePath = str_replace($dir2 . DIRECTORY_SEPARATOR, '', $file->getRealPath());
+        $relative_path = str_replace(realpath($dir2) . DIRECTORY_SEPARATOR, '', $file->getRealPath());
 
-        return in_array($relativePath, $allowed_files);
+        return in_array($relative_path, $allowed_files);
       });
 
       $this->fs->mirror($dir2, $dir1, $finder->getIterator(), [
