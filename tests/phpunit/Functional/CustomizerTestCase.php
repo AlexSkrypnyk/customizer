@@ -711,7 +711,7 @@ abstract class CustomizerTestCase extends TestCase {
 
     // If differences exist, throw assertion error.
     if (!empty($diffs['only_in_dir1']) || !empty($diffs['only_in_dir2']) || !empty($diffs['different_files'])) {
-      $message = "Differences between directories:\n";
+      $message = sprintf("Differences between directories %s and %s:%s", $dir1, $dir2, PHP_EOL);
 
       if (!empty($diffs['only_in_dir1'])) {
         $message .= "Files only in dir1:\n";
