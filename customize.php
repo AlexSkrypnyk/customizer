@@ -164,7 +164,7 @@ class Customize {
       $c->debug('Add an example flag to composer.json.');
       $json = $c->readComposerJson($c->composerjson);
       $json['extra'] = is_array($json['extra']) ? $json['extra'] : [];
-      $json['extra']['customizer'] = TRUE;
+      $json['extra']['custom_field'] = TRUE;
       $c->writeComposerJson($c->composerjson, $json);
     }
 

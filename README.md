@@ -1,6 +1,6 @@
 <p align="center">
   <a href="" rel="noopener">
-  <img width=200px height=200px src="https://placehold.jp/000000/ffffff/200x200.png?text=Customizer&css=%7B%22border-radius%22%3A%22%20100px%22%7D" alt="Customizer logo"></a>
+  <img width=100px height=100px src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Ctext x='50' y='65' text-anchor='middle' dominant-baseline='middle' font-size='100'%3E🎛%3C/text%3E%3C/svg%3E" alt="Customizer logo"></a>
 </p>
 
 <h1 align="center">Interactive customization for template projects</h1>
@@ -44,21 +44,21 @@ composer create-project alexskrypnyk/template-project-example my-project
 ## Installation
 
 1. Add to the template project as a Composer dependency:
-```json
-"require-dev": {
-    "alexskrypnyk/customizer": "^0.5"
-},
-"config": {
-    "allow-plugins": {
-        "alexskrypnyk/customizer": true
-    }
-}
-```
-These entries will be removed by the Customizer after your project's users run
-the `composer create-project` command.
+   ```json
+   "require-dev": {
+       "alexskrypnyk/customizer": "^0.5"
+   },
+   "config": {
+       "allow-plugins": {
+           "alexskrypnyk/customizer": true
+       }
+   }
+   ```
+   These entries will be removed by the Customizer after your project's users
+   run the `composer create-project` command.
 
-2. Create `customize.php` file with questions and processing logic relevant
-   to your template project and place it in anywhere in your project.
+2. Copy [`customize.php`](customize.php) file with questions and processing
+   logic in any location within your template project and adjust it as needed.
 
 See the [Configuration](#configuration) section below for more information.
 
@@ -89,19 +89,17 @@ it's dependencies entries will stay in the `composer.json` file.
 
 The user will have to run `composer customize` manually to run the
 Customizer. It could be useful to let your users know about this command
-in the project's README file.
+in your project's `README` file.
 
 ## Configuration
 
-You can configure how the Customizer, including defining questions and
-processing logic, by providing an arbitrary class (with any namespace) in a
-`customize.php` file.
+You can configure how the Customizer processes your user’s template project by providing an arbitrary class (with any namespace) in a `customize.php` file. This includes defining questions and processing logic.
 
 The class has to implement `public static` methods :
 - [`questions()`](#questions) - defines questions; required
 - [`process()`](#process) - defines processing logic based on received answers; required
 - [`cleanup()`](#cleanup) - defines processing logic for the `composer.json` file; optional
-- [`messages()`](#messages) - optional method to overwrite messages seen by the user; optional
+- [`messages()`](#messages) - defines custom messages seen by the user; optional
 
 ### `questions()`
 
@@ -141,6 +139,10 @@ All file manipulations should be done within this method.
 Defines the `cleanup()` method after all files were processed but before all
 dependencies are updated.
 
+The Customizer will remove itself from the project and will update the
+`composer.json` as required. This method allows to alter that process as
+needed and, if necessary, cancel the original self-cleanup.
+
 [`customize.php`](customize.php) has an example of the `cleanup()` method.
 
 ### `messages()`
@@ -148,7 +150,6 @@ dependencies are updated.
 Defines overrides for the Customizer's messages shown to the user.
 
 [`customize.php`](customize.php) has an example of the `messages()` method.
-messages provided by the Customizer.
 
 ### Example configuration
 
@@ -322,7 +323,7 @@ class Customize {
       $c->debug('Add an example flag to composer.json.');
       $json = $c->readComposerJson($c->composerjson);
       $json['extra'] = is_array($json['extra']) ? $json['extra'] : [];
-      $json['extra']['customizer'] = TRUE;
+      $json['extra']['custom_field'] = TRUE;
       $c->writeComposerJson($c->composerjson, $json);
     }
 
@@ -354,7 +355,7 @@ class Customize {
 ## Helpers
 
 The Customizer provides a few helpers to make processing answers easier.
-These are available as properties and methods of the Customizer `$c` instance
+These are available as properties and methods of the Customizer instance
 passed to the processing callbacks:
 
 - `cwd` - current working directory.
@@ -373,7 +374,7 @@ passed to the processing callbacks:
 - `arrayUnsetDeep()` - Unset a fully or partially matched value in a nested
   array, removing empty arrays.
 
-Question validation helpers are not provided in this class, but you can easily
+Validation helpers for questions are not provided in this class, but you can easily
 create them using custom regular expression or add them from the
 [AlexSkrypnyk/str2name](https://github.com/AlexSkrypnyk/Str2Name) package.
 
@@ -418,9 +419,10 @@ To use the test harness:
    ```
 4. Create a directory in your project with the name `tests/phpunit/Fixtures/<name_of_test_snake_case>`
    and place your test fixtures there. If you use data providers, you can
-   create a sub-directory with the name of the data set within the provider.
-5. Add tests as _base_/_expected_ directory structures and assert for the
-   expected results.
+   create a sub-directory with the name of the data set within the provider (the top-level key within
+   the data provider).
+5. Add fixtures as _base_/_expected_ directory structures (see below) and assert for the
+   expected results in your test.
 
 See examples within the [template project example](https://github.com/AlexSkrypnyk/template-project-example/blob/main/tests/phpunit).
 
