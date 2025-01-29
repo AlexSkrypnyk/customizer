@@ -45,7 +45,7 @@
     },
     "extra": {
         "class": "AlexSkrypnyk\\Customizer\\Plugin",
-        "customizer": true
+        "custom_field": true
     },
     "scripts": {
         "lint": [
