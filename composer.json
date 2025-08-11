@@ -27,7 +27,7 @@
         "ergebnis/composer-normalize": "^2.42",
         "phpcompatibility/php-compatibility": "^9.3",
         "phpstan/phpstan": "^2",
-        "phpunit/phpunit": "^11.1",
+        "phpunit/phpunit": "^12.0",
         "rector/rector": "^2"
     },
     "minimum-stability": "dev",
