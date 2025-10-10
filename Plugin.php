@@ -106,7 +106,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface, CommandProvid
   public static function update(): void {
     if (file_exists('composer.lock')) {
       exec('composer update --quiet --no-interaction --no-progress --no-plugins', $output, $status);
-      if ($status != 0) {
+      if ($status !== 0) {
         throw new \Exception('Command failed with exit code ' . $status . ': ' . implode("\n", $output));
       }
     }

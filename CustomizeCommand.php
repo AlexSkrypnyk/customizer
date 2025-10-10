@@ -424,7 +424,7 @@ class CustomizeCommand extends BaseCommand {
    */
   public static function passthru(string $cmd): void {
     passthru($cmd, $status);
-    if ($status != 0) {
+    if ($status !== 0) {
       throw new \Exception('Command failed with exit code ' . $status);
     }
   }
