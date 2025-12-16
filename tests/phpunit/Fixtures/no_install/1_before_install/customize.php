@@ -20,7 +20,10 @@ class Customize {
 
           return $org . '/' . $name;
         },
-        'question' => static fn(string $discovered, array $answers, CustomizeCommand $c): mixed => $c->io->ask('Package name', $discovered, static function (string $value): string {
+        'question' => static fn(string $discovered, array $answers, CustomizeCommand $c): mixed => $c->io->ask('Package name', $discovered, static function (mixed $value): string {
+          if (!is_string($value)) {
+            throw new \InvalidArgumentException('Expected string value');
+          }
           if (!preg_match('/^[a-z0-9_.-]+\/[a-z0-9_.-]+$/', $value)) {
             throw new \InvalidArgumentException(sprintf('The package name "%s" is invalid, it should be lowercase and have a vendor name, a forward slash, and a package name.', $value));
           }
