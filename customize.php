@@ -65,10 +65,13 @@ class Customize {
         // The discovery callback is used to provide a default value.
         // The question callback provides a capability to validate the answer
         // before it can be accepted by providing a validation callback.
-        'question' => static fn(string $discovered, array $answers, CustomizeCommand $c): mixed => $c->io->ask('Package name', $discovered, static function (string $value): string {
+        'question' => static fn(string $discovered, array $answers, CustomizeCommand $c): mixed => $c->io->ask('Package name', $discovered, static function (mixed $value): string {
           // This is a validation callback that checks if the package name is
           // valid. If not, an \InvalidArgumentException exception is thrown
           // with a message shown to the user.
+          if (!is_string($value)) {
+            throw new \InvalidArgumentException('Expected string value');
+          }
           if (!preg_match('/^[a-z0-9_.-]+\/[a-z0-9_.-]+$/', $value)) {
             throw new \InvalidArgumentException(sprintf('The package name "%s" is invalid, it should be lowercase and have a vendor name, a forward slash, and a package name.', $value));
           }
