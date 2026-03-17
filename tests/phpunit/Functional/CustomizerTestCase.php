@@ -704,7 +704,7 @@ abstract class CustomizerTestCase extends TestCase {
 
     // Compare files where content is not ignored.
     foreach ($dir1_files as $file => $hash) {
-      if (isset($dir2_files[$file]) && $hash !== $dir2_files[$file] && !in_array($file, $rules['ignore_content'])) {
+      if (isset($dir2_files[$file]) && $hash !== $dir2_files[$file] && !in_array($file, $rules['ignore_content'], TRUE)) {
         $diffs['different_files'][] = $file;
       }
     }
