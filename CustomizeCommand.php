@@ -297,7 +297,7 @@ class CustomizeCommand extends BaseCommand {
     }
 
     $message = $messages[$name];
-    $message = is_array($message) ? implode("\n", $message) : $message;
+    $message = is_array($message) ? implode("\n", array_filter(array_map(fn($v): string => is_scalar($v) ? (string) $v : '', $message))) : $message;
 
     $tokens += ['{{ cwd }}' => $this->cwd];
     // Only support top-level composer.json entries as tokens for now.
