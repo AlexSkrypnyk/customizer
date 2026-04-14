@@ -125,7 +125,7 @@ class SelfTest extends CustomizerTestCase {
 
     // Compare the actual and expected sections.
     foreach (['dir1', 'dir2', 'content'] as $section) {
-      $this->assertEquals($expected[$section] ?: [], $actual[$section] ?: [], sprintf("Files in section '%s' do not match expected.", $section));
+      $this->assertEquals($expected[$section] ?: [], $actual[$section], sprintf("Files in section '%s' do not match expected.", $section));
     }
   }
 
