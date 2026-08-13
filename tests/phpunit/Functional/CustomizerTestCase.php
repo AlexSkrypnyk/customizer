@@ -576,7 +576,7 @@ abstract class CustomizerTestCase extends TestCase {
         if ($line[0] === '#') {
           continue;
         }
-        elseif ($line[0] === '!') {
+        if ($line[0] === '!') {
           $rules['include'][] = $line[1] === '^' ? substr($line, 2) : substr($line, 1);
         }
         elseif ($line[0] === '^') {
